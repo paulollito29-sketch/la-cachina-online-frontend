@@ -1,0 +1,67 @@
+:root {
+  --gold: #C9A96E;
+  --gold-light: #E8D5A3;
+  --gold-dark: #A8883E;
+  --olive: #5C7A4A;
+  --olive-light: #8BA87A;
+  --cream: #F9F6F0;
+  --charcoal: #2C2C2C;
+  --gray-100: #F5F5F0;
+  --gray-200: #E8E5DF;
+  --gray-300: #C4C0B8;
+  --gray-400: #8A867E;
+  --gray-500: #5C5A55;
+  --white: #FFFFFF;
+  --black: #1A1A1A;
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  --radius: 8px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--charcoal);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+input, textarea, select {
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
