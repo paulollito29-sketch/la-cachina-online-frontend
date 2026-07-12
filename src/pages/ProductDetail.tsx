@@ -67,6 +67,8 @@ export default function ProductDetailPage() {
             imageUrl: product.imageUrl,
             categoryId: product.categoryId,
             categoryName: product.categoryName,
+            available: product.available,
+            sex: product.sex,
           })}
         >
           {inCart ? `Agregar otro (${inCart.quantity} en carrito)` : 'Agregar al carrito'}

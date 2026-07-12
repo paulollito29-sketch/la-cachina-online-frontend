@@ -18,6 +18,8 @@ export interface ProductSummary {
   imageUrl: string
   categoryId: number
   categoryName: string
+  available: boolean
+  sex: string
 }
 
 export interface ProductDetail {
@@ -30,7 +32,23 @@ export interface ProductDetail {
   imageUrl: string
   categoryId: number
   categoryName: string
+  available: boolean
+  sex: string
 }
+
+export interface ProductCreate {
+  name: string
+  description?: string
+  price: number
+  size?: string
+  condition: number
+  imageUrl?: string
+  categoryId: number
+  available: boolean
+  sex?: string
+}
+
+export interface ProductUpdate extends ProductCreate {}
 
 export interface Customer {
   idCustomer: number

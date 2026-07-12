@@ -21,7 +21,12 @@ export default function Header() {
             {loading ? null : user ? (
               <div className="user-menu">
                 <span className="user-email">{user.email}</span>
-                {user.role === 'ADMIN' && <span className="role-badge">Admin</span>}
+                {user.role === 'ADMIN' && (
+                  <>
+                    <Link to="/admin" className="admin-link">Admin</Link>
+                    <span className="role-badge">ADMIN</span>
+                  </>
+                )}
                 <button className="btn-logout" onClick={logout}>Salir</button>
               </div>
             ) : (
