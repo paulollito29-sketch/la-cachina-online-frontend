@@ -1,9 +1,11 @@
 import type { Category, CategoryFull, ProductSummary, ProductDetail, ProductCreate, Customer, Sale } from '../types/models'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const stored = localStorage.getItem('vv_user')
   const token = stored ? JSON.parse(stored).token : null
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${API_BASE}/api${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
