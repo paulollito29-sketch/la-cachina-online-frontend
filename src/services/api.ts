@@ -1,6 +1,6 @@
 import type { Category, CategoryFull, ProductSummary, ProductDetail, ProductCreate, Customer, Sale } from '../types/models'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://vault-vintage-backend-production.up.railway.app'
+export const API_BASE = import.meta.env.VITE_API_URL || 'https://vault-vintage-backend-production.up.railway.app'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const stored = localStorage.getItem('vv_user')

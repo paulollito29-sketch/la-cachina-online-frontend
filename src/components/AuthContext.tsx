@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { API_BASE } from '../services/api'
 
 interface User {
   email: string
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const loginWithPassword = useCallback(async (username: string, password: string) => {
-    const res = await fetch('/auth/login', {
+    const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -66,7 +67,7 @@ export function useAuth() {
 export function authFetch(url: string, init?: RequestInit): Promise<Response> {
   const stored = localStorage.getItem('vv_user')
   const token = stored ? JSON.parse(stored).token : null
-  return fetch(url, {
+  return fetch(`${API_BASE}${url}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
