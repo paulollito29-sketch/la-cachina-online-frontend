@@ -58,11 +58,15 @@ export const productApi = {
 }
 
 export const customerApi = {
+  getAll: () => request<Customer[]>('/customers'),
+  getOne: (id: number) => request<Customer>(`/customers/${id}`),
   create: (data: { name: string; email: string; phone?: string; address?: string }) =>
     request<Customer>('/customers', { method: 'POST', body: JSON.stringify(data) }),
 }
 
 export const saleApi = {
+  getAll: () => request<Sale[]>('/sales'),
+  getOne: (id: number) => request<Sale>(`/sales/${id}`),
   create: (data: { customerId: number; description: string }) =>
     request<Sale>('/sales', { method: 'POST', body: JSON.stringify(data) }),
 }

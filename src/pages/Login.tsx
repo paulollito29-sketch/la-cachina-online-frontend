@@ -45,6 +45,13 @@ export default function Login() {
           required
         />
         <button type="submit" className="btn-primary">Ingresar</button>
+        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--gray-500)' }}>
+          <Link to="/forgot-password" style={{ color: 'var(--gold-dark)' }}>¿Olvidaste tu contraseña?</Link>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--gray-500)', borderTop: '1px solid var(--gray-200)', paddingTop: '0.75rem' }}>
+          ¿No tienes cuenta?{' '}
+          <Link to="/register" style={{ color: 'var(--gold-dark)', fontWeight: 600 }}>Regístrate</Link>
+        </div>
         <Link to="/" className="back-link">← Volver a la tienda</Link>
       </form>
     </div>

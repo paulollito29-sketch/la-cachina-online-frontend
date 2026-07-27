@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from './CartContext'
 import { useAuth } from './AuthContext'
@@ -5,9 +6,16 @@ import { useAuth } from './AuthContext'
 export default function Header() {
   const { itemCount } = useCart()
   const { user, loading, logout } = useAuth()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
-    <header className="header">
+    <header className={`header${scrolled ? ' header-scrolled' : ''}`}>
       <div className="header-inner">
         <Link to="/" className="header-logo">Vault Vintage</Link>
         <nav className="header-nav">

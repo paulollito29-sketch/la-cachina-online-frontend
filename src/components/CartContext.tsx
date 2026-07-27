@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { ProductSummary, CartItem } from '../types/models'
 
 interface CartContextType {
@@ -12,9 +12,26 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
+const STORAGE_KEY = 'vv_cart'
+
+function loadCart(): CartItem[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch { /* ignore */ }
+  return []
+}
+
+function saveCart(items: CartItem[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [items, setItems] = useState<CartItem[]>(loadCart)
+
+  useEffect(() => {
+    saveCart(items)
+  }, [items])
 
   const addItem = useCallback((product: ProductSummary) => {
     setItems(prev => {

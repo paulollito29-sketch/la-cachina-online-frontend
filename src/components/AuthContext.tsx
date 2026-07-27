@@ -12,6 +12,9 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   loginWithPassword: (username: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string, displayName?: string) => Promise<void>
+  forgotPassword: (email: string) => Promise<{ resetToken?: string }>
+  resetPassword: (token: string, newPassword: string) => Promise<void>
   logout: () => void
 }
 
@@ -33,17 +36,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [])
 
+  const setUserAndStore = useCallback((u: User) => {
+    setUser(u)
+    localStorage.setItem('vv_user', JSON.stringify(u))
+  }, [])
+
   const loginWithPassword = useCallback(async (username: string, password: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
-    if (!res.ok) throw new Error('Login failed')
+    if (!res.ok) throw new Error('Usuario o contraseña incorrectos')
     const data = await res.json()
-    const u: User = { email: data.email, name: data.name, token: data.token, role: data.role }
-    setUser(u)
-    localStorage.setItem('vv_user', JSON.stringify(u))
+    setUserAndStore({ email: data.email, name: data.name, token: data.token, role: data.role })
+  }, [setUserAndStore])
+
+  const register = useCallback(async (username: string, email: string, password: string, displayName?: string) => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password, displayName }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Error al registrarse')
+    setUserAndStore({ email: data.email, name: data.name, token: data.token, role: data.role })
+  }, [setUserAndStore])
+
+  const forgotPassword = useCallback(async (email: string) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Error al solicitar recuperación')
+    return data
+  }, [])
+
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Error al restablecer contraseña')
   }, [])
 
   const logout = useCallback(() => {
@@ -52,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithPassword, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithPassword, register, forgotPassword, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   )

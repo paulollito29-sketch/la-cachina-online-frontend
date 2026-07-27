@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
-import { categoryApi, productApi } from '../services/api'
+import { categoryApi, productApi, customerApi, saleApi } from '../services/api'
 import type { Category, ProductSummary, ProductCreate } from '../types/models'
 
-type Tab = 'categories' | 'products'
+type Tab = 'dashboard' | 'categories' | 'products'
 
 const emptyProduct: ProductCreate = {
   name: '', description: '', price: 0, size: '', condition: 3,
   imageUrl: '', categoryId: 0, available: true, sex: 'U',
 }
 
+interface DashboardStats {
+  products: number
+  categories: number
+  sales: number
+  customers: number
+}
+
 export default function Admin() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('categories')
+  const [tab, setTab] = useState<Tab>('dashboard')
 
   useEffect(() => {
     if (!user || user.role !== 'ADMIN') navigate('/')
@@ -26,11 +33,60 @@ export default function Admin() {
     <div className="admin-page">
       <h1>Panel de Administración</h1>
       <nav className="admin-tabs">
+        <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>Dashboard</button>
         <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categorías</button>
         <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Productos</button>
       </nav>
-      {tab === 'categories' ? <AdminCategories /> : <AdminProducts />}
+      {tab === 'dashboard' && <AdminDashboard />}
+      {tab === 'categories' && <AdminCategories />}
+      {tab === 'products' && <AdminProducts />}
     </div>
+  )
+}
+
+function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({ products: 0, categories: 0, sales: 0, customers: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      productApi.getAll().then(p => p.length),
+      categoryApi.getAll().then(c => c.length),
+      saleApi.getAll().then(s => s.length),
+      customerApi.getAll().then(c => c.length),
+    ])
+      .then(([products, categories, sales, customers]) => {
+        setStats({ products, categories, sales, customers })
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="loading">Cargando estadísticas...</div>
+
+  const cards = [
+    { icon: '👕', value: stats.products, label: 'Productos' },
+    { icon: '📂', value: stats.categories, label: 'Categorías' },
+    { icon: '🧾', value: stats.sales, label: 'Ventas' },
+    { icon: '👤', value: stats.customers, label: 'Clientes' },
+  ]
+
+  return (
+    <>
+      <div className="admin-dashboard">
+        {cards.map(card => (
+          <div key={card.label} className="dashboard-card">
+            <div className="dashboard-card-icon">{card.icon}</div>
+            <div className="dashboard-card-value">{card.value}</div>
+            <div className="dashboard-card-label">{card.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="admin-section">
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          Bienvenido al panel de administración de Vault Vintage. Gestiona tus categorías y productos desde aquí.
+        </p>
+      </div>
+    </>
   )
 }
 
