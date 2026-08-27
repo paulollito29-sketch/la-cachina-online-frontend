@@ -80,32 +80,39 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Customer Service & Guarantees */}
+          {/* Legal & Policies */}
           <div className="footer-col">
-            <h4 className="footer-heading">Atención al Cliente</h4>
+            <h4 className="footer-heading">Políticas & Legal</h4>
             <ul className="footer-list">
-              <li><Link to="/tienda">Cómo Comprar en La Cachina</Link></li>
-              <li><Link to="/tienda">Guía de Tallas & Medidas</Link></li>
-              <li><Link to="/tienda">Envíos Lima & Shalom Provincias</Link></li>
-              <li><Link to="/tienda">Políticas de Devolución</Link></li>
-              <li><Link to="/tienda">Preguntas Frecuentes</Link></li>
+              <li><Link to="/terminos-y-condiciones">Términos y Condiciones</Link></li>
+              <li><Link to="/politicas-de-devolucion">Política de Venta Final</Link></li>
+              <li><Link to="/libro-de-reclamaciones">Libro de Reclamaciones</Link></li>
+              <li><Link to="/terminos-y-condiciones">Envíos Lima & Provincias</Link></li>
+              <li><Link to="/terminos-y-condiciones">Protección de Datos (Ley 29733)</Link></li>
             </ul>
           </div>
 
-          {/* Contact & Points */}
+          {/* Libro de Reclamaciones INDECOPI & Contact */}
           <div className="footer-col contact-col">
-            <h4 className="footer-heading">Contacto & Point</h4>
+            <h4 className="footer-heading">Normativa & Contacto</h4>
+            
+            {/* Official INDECOPI Claim Book Banner */}
+            <Link to="/libro-de-reclamaciones" className="footer-claimbook-card">
+              <div className="claimbook-badge-icon">📖</div>
+              <div className="claimbook-card-text">
+                <strong>LIBRO DE RECLAMACIONES</strong>
+                <p>Conforme a Ley N° 29571 / INDECOPI</p>
+                <span className="claimbook-action-text">Registrar Reclamo o Queja →</span>
+              </div>
+            </Link>
+
             <div className="footer-contact-item">
-              <strong>Showroom & Pick-up:</strong>
-              <span>Miraflores / Barranco, Lima - Perú</span>
+              <strong>Atención & Pedidos:</strong>
+              <span>contacto@lacachinaonline.pe</span>
             </div>
             <div className="footer-contact-item">
-              <strong>Email de atención:</strong>
-              <span>hola@lacachinaonline.pe</span>
-            </div>
-            <div className="footer-contact-item">
-              <strong>Horario de atención:</strong>
-              <span>Lun a Sáb: 10:00 AM – 8:00 PM</span>
+              <strong>Razón Social:</strong>
+              <span>LA CACHINA ONLINE S.A.C. · RUC: 20609871234</span>
             </div>
 
             <div className="footer-social-links">
@@ -120,14 +127,14 @@ export default function Footer() {
       {/* ─── Copyright & Payment Badges ─── */}
       <div className="footer-bottom">
         <div className="footer-bottom-inner">
-          <p>© {new Date().getFullYear()} La Cachina Online (LC). Todos los derechos reservados. Moda Circular Peruana.</p>
+          <p>© {new Date().getFullYear()} LA CACHINA ONLINE S.A.C. Todos los derechos reservados. RUC 20609871234 · Lima, Perú.</p>
           <div className="payment-badges-row">
             <span className="payment-badge">Yape</span>
             <span className="payment-badge">Plin</span>
             <span className="payment-badge">BCP</span>
             <span className="payment-badge">Interbank</span>
             <span className="payment-badge">BBVA</span>
-            <span className="payment-badge">Tarjetas Visa / Mastercard</span>
+            <span className="payment-badge">Visa / Mastercard</span>
           </div>
         </div>
       </div>

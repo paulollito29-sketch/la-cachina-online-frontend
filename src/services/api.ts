@@ -312,3 +312,129 @@ export const saleApi = {
     }
   },
 }
+
+const CLAIMS_STORAGE_KEY = 'lco_claims_v1'
+
+function getStoredClaims(): import('../types/models').ClaimResponse[] {
+  try {
+    const raw = localStorage.getItem(CLAIMS_STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return [
+    {
+      idClaim: 1,
+      claimCode: 'LR-2026-0001',
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      docType: 'DNI',
+      docNumber: '74829103',
+      fullName: 'Sebastián Mendoza',
+      email: 'sebastian.m@ejemplo.pe',
+      phone: '987654321',
+      address: 'Av. Larco 450, Dpto 302',
+      department: 'Lima',
+      province: 'Lima',
+      district: 'Miraflores',
+      isMinor: false,
+      contractedGoodType: 'PRODUCTO',
+      claimedAmount: 180.00,
+      goodDescription: 'Casaca Cuero Vintage Biker 90s (Talla L)',
+      orderNumber: 'ORD-9821',
+      claimType: 'RECLAMO',
+      detail: 'Consulta sobre el tiempo de entrega y confirmación de la guía de envío por Olva Courier.',
+      consumerRequest: 'Solicito el número de seguimiento actualizado del paquete.',
+      status: 'ATENDIDO',
+      adminResponse: 'Estimado cliente, se le envió el tracking 450912 de Olva Courier a su WhatsApp. Pedido entregado satisfactoriamente.',
+      respondedAt: new Date(Date.now() - 86400000).toISOString(),
+      respondedBy: 'La Cachina Admin',
+    },
+  ]
+}
+
+function saveStoredClaims(claims: import('../types/models').ClaimResponse[]) {
+  try {
+    localStorage.setItem(CLAIMS_STORAGE_KEY, JSON.stringify(claims))
+  } catch {}
+}
+
+export const claimApi = {
+  create: async (data: import('../types/models').ClaimCreate): Promise<import('../types/models').ClaimResponse> => {
+    try {
+      return await request<import('../types/models').ClaimResponse>('/claims', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    } catch {
+      const existing = getStoredClaims()
+      const currentYear = new Date().getFullYear()
+      const code = `LR-${currentYear}-${String(existing.length + 1).padStart(4, '0')}`
+      const newClaim: import('../types/models').ClaimResponse = {
+        ...data,
+        idClaim: Date.now(),
+        claimCode: code,
+        createdAt: new Date().toISOString(),
+        status: 'PENDIENTE',
+      }
+      const updated = [newClaim, ...existing]
+      saveStoredClaims(updated)
+      return newClaim
+    }
+  },
+  getAll: async (): Promise<import('../types/models').ClaimResponse[]> => {
+    try {
+      return await request<import('../types/models').ClaimResponse[]>('/claims')
+    } catch {
+      return getStoredClaims()
+    }
+  },
+  getOneByCode: async (code: string): Promise<import('../types/models').ClaimResponse> => {
+    try {
+      return await request<import('../types/models').ClaimResponse>(`/claims/track/${code}`)
+    } catch {
+      const found = getStoredClaims().find(c => c.claimCode.toUpperCase() === code.trim().toUpperCase())
+      if (!found) throw new Error(`No se encontró ninguna reclamación con el código ${code}`)
+      return found
+    }
+  },
+  updateStatus: async (
+    id: number,
+    data: { status: 'PENDIENTE' | 'EN_REVISION' | 'ATENDIDO'; adminResponse?: string }
+  ): Promise<import('../types/models').ClaimResponse> => {
+    try {
+      return await request<import('../types/models').ClaimResponse>(`/claims/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+    } catch {
+      const existing = getStoredClaims()
+      const updated = existing.map(c => {
+        if (c.idClaim === id) {
+          return {
+            ...c,
+            status: data.status,
+            adminResponse: data.adminResponse || c.adminResponse,
+            respondedAt: data.adminResponse ? new Date().toISOString() : c.respondedAt,
+            respondedBy: 'La Cachina Admin',
+          }
+        }
+        return c
+      })
+      saveStoredClaims(updated)
+      return updated.find(c => c.idClaim === id)!
+    }
+  },
+}
+
+export const userApi = {
+  getAllUsers: async (): Promise<import('../types/models').AppUser[]> => {
+    try {
+      return await request<import('../types/models').AppUser[]>('/auth/users')
+    } catch {
+      return [
+        { username: 'cachina', email: 'cachina@lacachinaonline.pe', displayName: 'La Cachina Admin', role: 'ADMIN' },
+        { username: 'vintage_seller', email: 'seller@lacachinaonline.pe', displayName: 'Tacora Thrift Seller', role: 'SELLER' },
+        { username: 'cliente_lima', email: 'cliente@gmail.com', displayName: 'Comprador Frecuente', role: 'CUSTOMER' },
+      ]
+    }
+  },
+}
+

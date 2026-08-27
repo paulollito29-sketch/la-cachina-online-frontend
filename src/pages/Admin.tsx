@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useToast } from '../components/ToastContext'
-import { categoryApi, productApi, customerApi, saleApi } from '../services/api'
-import type { Category, ProductSummary, ProductCreate } from '../types/models'
+import { categoryApi, productApi, customerApi, saleApi, claimApi, userApi } from '../services/api'
+import type { Category, ProductSummary, ProductCreate, ClaimResponse, AppUser } from '../types/models'
 
-type Tab = 'dashboard' | 'products' | 'categories'
+type Tab = 'dashboard' | 'products' | 'categories' | 'claims' | 'users'
 
 const emptyProduct: ProductCreate = {
   name: '', description: '', price: 0, size: 'M', condition: 4,
@@ -40,7 +40,7 @@ export default function Admin() {
           </div>
           <div>
             <h1>Panel de Administración</h1>
-            <p>Control de inventario, archivo de piezas y métricas de La Cachina Online</p>
+            <p>Control de inventario, archivo de piezas, Libro de Reclamaciones y métricas</p>
           </div>
         </div>
 
@@ -54,6 +54,12 @@ export default function Admin() {
           <button className={`admin-tab-btn ${tab === 'categories' ? 'active' : ''}`} onClick={() => setTab('categories')}>
             📂 Categorías
           </button>
+          <button className={`admin-tab-btn ${tab === 'claims' ? 'active' : ''}`} onClick={() => setTab('claims')}>
+            📖 Reclamaciones INDECOPI
+          </button>
+          <button className={`admin-tab-btn ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>
+            👥 Usuarios & Roles
+          </button>
         </nav>
       </div>
 
@@ -61,6 +67,8 @@ export default function Admin() {
         {tab === 'dashboard' && <AdminDashboard />}
         {tab === 'products' && <AdminProducts />}
         {tab === 'categories' && <AdminCategories />}
+        {tab === 'claims' && <AdminClaims />}
+        {tab === 'users' && <AdminUsers />}
       </div>
     </div>
   )
@@ -680,3 +688,305 @@ function AdminCategories() {
     </div>
   )
 }
+
+function AdminClaims() {
+  const { showToast } = useToast()
+  const [claims, setClaims] = useState<ClaimResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedClaim, setSelectedClaim] = useState<ClaimResponse | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'TODOS' | 'PENDIENTE' | 'EN_REVISION' | 'ATENDIDO'>('TODOS')
+  const [adminResponse, setAdminResponse] = useState('')
+  const [newStatus, setNewStatus] = useState<'PENDIENTE' | 'EN_REVISION' | 'ATENDIDO'>('ATENDIDO')
+  const [updating, setUpdating] = useState(false)
+
+  const loadClaims = () => {
+    setLoading(true)
+    claimApi.getAll()
+      .then(res => setClaims(res))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadClaims()
+  }, [])
+
+  const handleOpenDetail = (claim: ClaimResponse) => {
+    setSelectedClaim(claim)
+    setAdminResponse(claim.adminResponse || '')
+    setNewStatus(claim.status)
+  }
+
+  const handleUpdateStatus = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedClaim) return
+
+    setUpdating(true)
+    try {
+      const res = await claimApi.updateStatus(selectedClaim.idClaim, {
+        status: newStatus,
+        adminResponse: adminResponse.trim(),
+      })
+      showToast('Reclamación actualizada', `Código ${res.claimCode} actualizado a ${newStatus}`, 'success')
+      setSelectedClaim(null)
+      loadClaims()
+    } catch (err: any) {
+      showToast('Error al actualizar', err.message || 'Error', 'error')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const filteredClaims = statusFilter === 'TODOS'
+    ? claims
+    : claims.filter(c => c.status === statusFilter)
+
+  return (
+    <div className="admin-claims-container">
+      <div className="admin-claims-header-row">
+        <div>
+          <h2>Libro de Reclamaciones Virtual (INDECOPI)</h2>
+          <p>Supervisión legal y atención de quejas y reclamos conforme a la Ley N° 29571 (Plazo máx. 15 días hábiles).</p>
+        </div>
+
+        <div className="claims-filter-buttons">
+          {(['TODOS', 'PENDIENTE', 'EN_REVISION', 'ATENDIDO'] as const).map(st => (
+            <button
+              key={st}
+              type="button"
+              className={`filter-chip ${statusFilter === st ? 'active' : ''}`}
+              onClick={() => setStatusFilter(st)}
+            >
+              {st === 'TODOS' ? 'Todos' : st}
+              <span className="chip-count">
+                ({st === 'TODOS' ? claims.length : claims.filter(c => c.status === st).length})
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="admin-loading-state">Cargando reclamaciones...</div>
+      ) : filteredClaims.length === 0 ? (
+        <div className="admin-empty-state">
+          <p>No hay reclamaciones en este estado.</p>
+        </div>
+      ) : (
+        <div className="admin-claims-table-card">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Fecha</th>
+                <th>Consumidor</th>
+                <th>Documento</th>
+                <th>Bien Reclamado</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClaims.map(c => (
+                <tr key={c.idClaim}>
+                  <td><strong className="claim-code-cell">{c.claimCode}</strong></td>
+                  <td>{new Date(c.createdAt).toLocaleDateString('es-PE')}</td>
+                  <td>
+                    <div>
+                      <strong>{c.fullName}</strong>
+                      <small className="cell-sub">{c.email}</small>
+                    </div>
+                  </td>
+                  <td>{c.docType} {c.docNumber}</td>
+                  <td>
+                    <div className="good-desc-cell">
+                      <span>{c.goodDescription}</span>
+                      {c.claimedAmount && <small className="cell-sub">S/ {c.claimedAmount.toFixed(2)}</small>}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`claim-type-badge ${c.claimType.toLowerCase()}`}>
+                      {c.claimType}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`claim-status-pill ${c.status.toLowerCase()}`}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-admin-edit"
+                      onClick={() => handleOpenDetail(c)}
+                    >
+                      Ver / Atender
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Modal de Detalle y Respuesta */}
+      {selectedClaim && (
+        <div className="admin-modal-overlay" onClick={() => setSelectedClaim(null)}>
+          <div className="admin-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <span className="code-label">RECLAMACIÓN OFICIAL</span>
+                <h3>{selectedClaim.claimCode} — {selectedClaim.fullName}</h3>
+                <small>Registrado el {new Date(selectedClaim.createdAt).toLocaleString('es-PE')}</small>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setSelectedClaim(null)}>✕</button>
+            </div>
+
+            <div className="modal-body-scroll">
+              <div className="modal-detail-grid">
+                <div className="detail-item">
+                  <strong>Consumidor:</strong>
+                  <span>{selectedClaim.fullName} ({selectedClaim.docType}: {selectedClaim.docNumber})</span>
+                </div>
+                <div className="detail-item">
+                  <strong>Contacto:</strong>
+                  <span>{selectedClaim.email} | Tel: {selectedClaim.phone}</span>
+                </div>
+                <div className="detail-item">
+                  <strong>Dirección:</strong>
+                  <span>{selectedClaim.address}, {selectedClaim.district} - {selectedClaim.province}</span>
+                </div>
+                <div className="detail-item">
+                  <strong>Bien Contratado:</strong>
+                  <span>{selectedClaim.contractedGoodType} — {selectedClaim.goodDescription}</span>
+                </div>
+                {selectedClaim.claimedAmount && (
+                  <div className="detail-item">
+                    <strong>Monto Reclamado:</strong>
+                    <span>S/ {selectedClaim.claimedAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedClaim.orderNumber && (
+                  <div className="detail-item">
+                    <strong>N° Pedido:</strong>
+                    <span>{selectedClaim.orderNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-facts-box">
+                <h4>📝 Detalle de los Hechos ({selectedClaim.claimType}):</h4>
+                <p>{selectedClaim.detail}</p>
+              </div>
+
+              <div className="modal-facts-box">
+                <h4>🎯 Pedido Concreto del Consumidor:</h4>
+                <p>{selectedClaim.consumerRequest}</p>
+              </div>
+
+              <form onSubmit={handleUpdateStatus} className="admin-reply-form">
+                <h4>🏛️ Resolución y Respuesta Oficial del Proveedor</h4>
+                
+                <div className="form-group-modern">
+                  <label>Estado de la Reclamación</label>
+                  <select
+                    value={newStatus}
+                    onChange={e => setNewStatus(e.target.value as any)}
+                  >
+                    <option value="PENDIENTE">PENDIENTE (En espera de revisión)</option>
+                    <option value="EN_REVISION">EN REVISIÓN (Evaluando con logística/taller)</option>
+                    <option value="ATENDIDO">ATENDIDO (Respuesta formal emitida al consumidor)</option>
+                  </select>
+                </div>
+
+                <div className="form-group-modern">
+                  <label>Respuesta Oficial (Será visible por el consumidor y enviada por correo)</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Redacta la fundamentación y resolución de La Cachina Online conforme a ley..."
+                    value={adminResponse}
+                    onChange={e => setAdminResponse(e.target.value)}
+                    required={newStatus === 'ATENDIDO'}
+                  />
+                </div>
+
+                <div className="modal-actions-row">
+                  <button type="submit" className="btn-primary-luxury" disabled={updating}>
+                    {updating ? 'Guardando...' : '💾 Guardar y Emitir Respuesta'}
+                  </button>
+                  <button type="button" className="btn-outline-luxury" onClick={() => setSelectedClaim(null)}>
+                    Cerrar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdminUsers() {
+  const [users, setUsers] = useState<AppUser[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    userApi.getAllUsers()
+      .then(res => setUsers(res))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="admin-users-container">
+      <div className="admin-inventory-card">
+        <div className="inventory-header">
+          <div>
+            <h3>Usuarios Registrados en La Cachina Online</h3>
+            <p>Control de perfiles, administradores (`ADMIN`), vendedores vintage (`SELLER`) y clientes (`CUSTOMER`).</p>
+          </div>
+          <span className="inventory-count-tag">{users.length} usuarios</span>
+        </div>
+
+        {loading ? (
+          <div className="admin-loading-state">Cargando usuarios...</div>
+        ) : (
+          <div className="admin-users-list">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Nombre Mostrado</th>
+                  <th>Correo Electrónico</th>
+                  <th>Rol Asignado</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.username}>
+                    <td><strong>@{u.username}</strong></td>
+                    <td>{u.displayName || u.username}</td>
+                    <td>{u.email}</td>
+                    <td>
+                      <span className={`user-role-badge role-${u.role.toLowerCase()}`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="user-active-badge">✓ Activo</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+

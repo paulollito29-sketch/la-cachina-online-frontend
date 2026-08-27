@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null
   login: (token: string, user: { id: number; email: string; name: string; role: string }) => void
   loginWithPassword: (username: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string, displayName?: string) => Promise<void>
+  register: (username: string, email: string, password: string, displayName?: string, role?: string) => Promise<void>
   loginWithGoogle: (credential?: string) => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
   forgotPassword: (email: string) => Promise<{ message: string; resetToken?: string }>
@@ -58,54 +58,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const data = await res.json()
       login(data.token, {
-        id: 1,
+        id: Date.now(),
         email: data.email || `${username}@lacachinaonline.pe`,
         name: data.name || username,
-        role: data.role || (username.toLowerCase().includes('admin') ? 'ADMIN' : 'USER'),
+        role: data.role || 'CUSTOMER',
       })
-    } catch {
-      // Offline / Demo fallback
-      const isAdminUser = username.toLowerCase().includes('admin')
-      const mockUser = {
-        id: Date.now(),
-        email: `${username}@lacachinaonline.pe`,
-        name: username.charAt(0).toUpperCase() + username.slice(1),
-        role: isAdminUser ? 'ADMIN' : 'USER',
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
+        throw err
       }
-      login('mock_jwt_token_' + Date.now(), mockUser)
+      // Demo mock fallback
+      if (username === 'cachina' && password === 'paulex1909@') {
+        login('mock_admin_token_cachina_2026', {
+          id: 1,
+          email: 'cachina@lacachinaonline.pe',
+          name: 'La Cachina Admin',
+          role: 'ADMIN',
+        })
+      } else {
+        login(`mock_token_${Date.now()}`, {
+          id: Date.now(),
+          email: `${username}@lacachinaonline.pe`,
+          name: username,
+          role: 'CUSTOMER',
+        })
+      }
     }
   }
 
-  const register = async (username: string, email: string, password: string, displayName?: string) => {
+  const register = async (username: string, email: string, password: string, displayName?: string, role: string = 'CUSTOMER') => {
     try {
       const res = await fetch('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, displayName }),
+        body: JSON.stringify({ username, email, password, displayName, role }),
       })
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Error al registrar' }))
-        throw new Error(err.message || 'Error al registrar cuenta')
+        const err = await res.json().catch(() => ({ message: 'Error al registrar usuario' }))
+        throw new Error(err.message || 'Error al crear la cuenta')
       }
       const data = await res.json()
       login(data.token, {
         id: Date.now(),
         email: data.email || email,
         name: data.name || displayName || username,
-        role: data.role || 'USER',
+        role: data.role || role,
       })
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('ya está')) {
-        throw error
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
+        throw err
       }
-      // Demo fallback
-      const mockUser = {
+      login(`mock_token_${Date.now()}`, {
         id: Date.now(),
         email,
         name: displayName || username,
-        role: 'USER',
-      }
-      login('mock_jwt_token_' + Date.now(), mockUser)
+        role,
+      })
     }
   }
 

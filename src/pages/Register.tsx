@@ -12,6 +12,7 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [role, setRole] = useState<'CUSTOMER' | 'SELLER'>('CUSTOMER')
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -40,8 +41,8 @@ export default function Register() {
 
     setSaving(true)
     try {
-      await register(username, email, password, displayName || undefined)
-      showToast('¡Cuenta creada con éxito!', 'Bienvenido a La Cachina Online', 'success')
+      await register(username, email, password, displayName || undefined, role)
+      showToast('¡Cuenta creada con éxito!', `Bienvenido a La Cachina Online como ${role === 'SELLER' ? 'Vendedor' : 'Comprador'}`, 'success')
       navigate('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear la cuenta. Intenta de nuevo.')
@@ -132,6 +133,35 @@ export default function Register() {
           </div>
 
           <div className="form-group-modern">
+            <label>Tipo de Cuenta</label>
+            <div className="role-selector-grid">
+              <label className={`role-card-btn ${role === 'CUSTOMER' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="CUSTOMER"
+                  checked={role === 'CUSTOMER'}
+                  onChange={() => setRole('CUSTOMER')}
+                />
+                <span className="role-icon">🛍️</span>
+                <span className="role-name">Comprador / Coleccionista</span>
+              </label>
+
+              <label className={`role-card-btn ${role === 'SELLER' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="SELLER"
+                  checked={role === 'SELLER'}
+                  onChange={() => setRole('SELLER')}
+                />
+                <span className="role-icon">🏷️</span>
+                <span className="role-name">Vendedor Vintage / Thrift</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group-modern">
             <label>Contraseña (mínimo 6 caracteres)</label>
             <div className="password-input-wrapper">
               <input
@@ -157,7 +187,7 @@ export default function Register() {
             className="btn-primary-luxury btn-auth-submit full-width"
             disabled={saving}
           >
-            <span>{saving ? 'Creando cuenta...' : 'Registrarme'}</span>
+            <span>{saving ? 'Creando cuenta...' : `Registrarme como ${role === 'SELLER' ? 'Vendedor' : 'Comprador'}`}</span>
             <span className="icon">→</span>
           </button>
         </form>

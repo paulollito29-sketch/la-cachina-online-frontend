@@ -285,6 +285,31 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
+          {/* Strict Sales Policy Notice */}
+          <div className="product-policy-notice-box">
+            <div className="policy-item-row">
+              <span className="policy-icon">🛡️</span>
+              <div>
+                <strong>Pieza Única de Archivo (1 de 1)</strong>
+                <p>Prenda original autenticada y sanitizada profesionalmente.</p>
+              </div>
+            </div>
+            <div className="policy-item-row">
+              <span className="policy-icon">🚫</span>
+              <div>
+                <strong>Política de Venta Final (Sin Cambios ni Devoluciones)</strong>
+                <p>Todas las ventas son finales al tratarse de prendas vintage exclusivas irrepetibles.</p>
+              </div>
+            </div>
+            <div className="policy-item-row">
+              <span className="policy-icon">🇵🇪</span>
+              <div>
+                <strong>Envíos a Todo el Perú</strong>
+                <p>Lima Express 24-48h y Provincias por Olva Courier / Shalom con tracking.</p>
+              </div>
+            </div>
+          </div>
+
           {/* CTA Action Buttons */}
           <div className="detail-action-buttons">
             <button

@@ -86,3 +86,62 @@ export interface CartItem {
   product: ProductSummary
   quantity: number
 }
+
+export interface ClaimCreate {
+  docType: string
+  docNumber: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  department?: string
+  province?: string
+  district?: string
+  isMinor?: boolean
+  parentName?: string
+  parentDocNumber?: string
+  contractedGoodType: string
+  claimedAmount?: number
+  goodDescription: string
+  orderNumber?: string
+  claimType: 'RECLAMO' | 'QUEJA'
+  detail: string
+  consumerRequest: string
+}
+
+export interface ClaimResponse {
+  idClaim: number
+  claimCode: string
+  createdAt: string
+  docType: string
+  docNumber: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  department?: string
+  province?: string
+  district?: string
+  isMinor?: boolean
+  parentName?: string
+  parentDocNumber?: string
+  contractedGoodType: string
+  claimedAmount?: number
+  goodDescription: string
+  orderNumber?: string
+  claimType: 'RECLAMO' | 'QUEJA'
+  detail: string
+  consumerRequest: string
+  status: 'PENDIENTE' | 'EN_REVISION' | 'ATENDIDO'
+  adminResponse?: string
+  respondedAt?: string
+  respondedBy?: string
+}
+
+export interface AppUser {
+  username: string
+  email: string
+  displayName?: string
+  role: 'ADMIN' | 'CUSTOMER' | 'SELLER' | 'USER'
+}
+

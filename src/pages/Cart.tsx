@@ -14,6 +14,7 @@ export default function Cart() {
   const [done, setDone] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
   const [error, setError] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -307,6 +308,15 @@ export default function Cart() {
                 </div>
               </div>
 
+              {/* Final Sale Policy Warning Callout */}
+              <div className="cart-final-sale-banner">
+                <span className="banner-icon">⚠️</span>
+                <div>
+                  <strong>POLÍTICA DE VENTA FINAL OBLIGATORIA:</strong>
+                  <p>Todas las ventas son finales. Al tratarse de prendas únicas y piezas de archivo vintage de segunda mano, no se aceptan cambios ni devoluciones.</p>
+                </div>
+              </div>
+
               {/* Order Summary Pricing */}
               <div className="checkout-summary-breakdown">
                 <div className="breakdown-row">
@@ -328,10 +338,25 @@ export default function Cart() {
                 </div>
               </div>
 
+              {/* Mandatory Terms & No Returns Checkbox */}
+              <div className="cart-terms-acceptance">
+                <label className="checkbox-label-modern">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={e => setTermsAccepted(e.target.checked)}
+                    required
+                  />
+                  <span>
+                    He leído y acepto los <Link to="/terminos-y-condiciones" target="_blank" className="terms-link-inline">Términos y Condiciones</Link> y confirmo que <strong>no hay cambios ni devoluciones</strong>. *
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 className="btn-primary-luxury btn-submit-order full-width"
-                disabled={saving}
+                disabled={saving || !termsAccepted}
               >
                 <span>{saving ? 'Procesando pedido...' : 'Confirmar y Solicitar Compra'}</span>
                 <span className="icon">→</span>

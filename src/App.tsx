@@ -14,6 +14,8 @@ import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Admin from './pages/Admin'
+import ClaimBook from './pages/ClaimBook'
+import TermsAndPolicies from './pages/TermsAndPolicies'
 import './App.css'
 
 const pageVariants = {
@@ -53,6 +55,9 @@ function AnimatedRoutes() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/libro-de-reclamaciones" element={<ClaimBook />} />
+          <Route path="/terminos-y-condiciones" element={<TermsAndPolicies />} />
+          <Route path="/politicas-de-devolucion" element={<TermsAndPolicies />} />
         </Routes>
       </motion.main>
     </AnimatePresence>
