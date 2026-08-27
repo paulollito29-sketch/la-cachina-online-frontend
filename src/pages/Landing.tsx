@@ -178,13 +178,9 @@ export default function Landing() {
           </div>
         ) : (
           <div className="empty-drop-state-card">
-            <span className="empty-drop-icon">📦</span>
+            <span className="empty-drop-icon">⚡</span>
             <h3>Próximo Drop en Preparación</h3>
-            <p>Nuestro equipo de cazadores de tesoros está preparando el próximo lanzamiento de archivo vintage.</p>
-            <Link to="/admin" className="btn-outline-luxury small">
-              <span>Publicar prendas desde el panel Admin</span>
-              <span className="icon">→</span>
-            </Link>
+            <p>Nuestro equipo de cazadores de tesoros está curando y preparando el próximo lote exclusivo de piezas vintage. ¡Atento a nuestras novedades!</p>
           </div>
         )}
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { productApi, categoryApi } from '../services/api'
 import ProductCard from '../components/ProductCard'
 import type { ProductSummary, Category } from '../types/models'
@@ -386,12 +386,9 @@ export default function Shop() {
             </div>
           ) : products.length === 0 ? (
             <div className="empty-shop-state">
-              <div className="empty-icon">🏷️</div>
-              <h3>Inventario Listo para Publicar</h3>
-              <p>Aún no hay piezas activas en la tienda. Inicia sesión como administrador para publicar las primeras joyas vintage.</p>
-              <Link to="/admin" className="btn-primary-luxury">
-                <span>Gestionar Inventario en Admin</span>
-              </Link>
+              <div className="empty-icon">⚡</div>
+              <h3>Próximo Drop en Preparación</h3>
+              <p>Actualmente estamos preparando y clasificando las nuevas joyas del archivo. Muy pronto estarán disponibles en la tienda.</p>
             </div>
           ) : sortedProducts.length === 0 ? (
             <div className="empty-shop-state">
