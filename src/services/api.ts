@@ -255,45 +255,11 @@ export const saleApi = {
     try {
       return await request<Sale[]>('/sales')
     } catch {
-      return [
-        {
-          idSale: 101,
-          subTotal: 340.00,
-          tax: 61.20,
-          total: 401.20,
-          description: 'Chaqueta Aviador 1980s',
-          customerId: 1,
-          customerName: 'Camila Rossi',
-          saleDate: new Date(Date.now() - 86400000 * 2).toISOString(),
-        },
-        {
-          idSale: 102,
-          subTotal: 210.00,
-          tax: 37.80,
-          total: 247.80,
-          description: 'Levi\'s 501 Selvedge',
-          customerId: 2,
-          customerName: 'Diego Benavides',
-          saleDate: new Date(Date.now() - 86400000 * 5).toISOString(),
-        },
-      ]
+      return []
     }
   },
   getOne: async (id: number): Promise<Sale> => {
-    try {
-      return await request<Sale>(`/sales/${id}`)
-    } catch {
-      return {
-        idSale: id,
-        subTotal: 200,
-        tax: 36,
-        total: 236,
-        description: 'Venta de prueba',
-        customerId: 1,
-        customerName: 'Cliente VV',
-        saleDate: new Date().toISOString(),
-      }
-    }
+    return await request<Sale>(`/sales/${id}`)
   },
   create: async (data: { customerId: number; description: string }): Promise<Sale> => {
     try {
@@ -301,9 +267,9 @@ export const saleApi = {
     } catch {
       return {
         idSale: Math.floor(1000 + Math.random() * 9000),
-        subTotal: 180,
-        tax: 32.4,
-        total: 212.4,
+        subTotal: 0,
+        tax: 0,
+        total: 0,
         description: data.description,
         customerId: data.customerId,
         customerName: 'Cliente',
@@ -313,41 +279,14 @@ export const saleApi = {
   },
 }
 
-const CLAIMS_STORAGE_KEY = 'lco_claims_v1'
+const CLAIMS_STORAGE_KEY = 'lco_claims_prod_v1'
 
 function getStoredClaims(): import('../types/models').ClaimResponse[] {
   try {
     const raw = localStorage.getItem(CLAIMS_STORAGE_KEY)
     if (raw) return JSON.parse(raw)
   } catch {}
-  return [
-    {
-      idClaim: 1,
-      claimCode: 'LR-2026-0001',
-      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-      docType: 'DNI',
-      docNumber: '74829103',
-      fullName: 'Sebastián Mendoza',
-      email: 'sebastian.m@ejemplo.pe',
-      phone: '987654321',
-      address: 'Av. Larco 450, Dpto 302',
-      department: 'Lima',
-      province: 'Lima',
-      district: 'Miraflores',
-      isMinor: false,
-      contractedGoodType: 'PRODUCTO',
-      claimedAmount: 180.00,
-      goodDescription: 'Casaca Cuero Vintage Biker 90s (Talla L)',
-      orderNumber: 'ORD-9821',
-      claimType: 'RECLAMO',
-      detail: 'Consulta sobre el tiempo de entrega y confirmación de la guía de envío por Olva Courier.',
-      consumerRequest: 'Solicito el número de seguimiento actualizado del paquete.',
-      status: 'ATENDIDO',
-      adminResponse: 'Estimado cliente, se le envió el tracking 450912 de Olva Courier a su WhatsApp. Pedido entregado satisfactoriamente.',
-      respondedAt: new Date(Date.now() - 86400000).toISOString(),
-      respondedBy: 'La Cachina Admin',
-    },
-  ]
+  return []
 }
 
 function saveStoredClaims(claims: import('../types/models').ClaimResponse[]) {
@@ -431,10 +370,7 @@ export const userApi = {
     } catch {
       return [
         { username: 'cachina', email: 'cachina@lacachinaonline.pe', displayName: 'La Cachina Admin', role: 'ADMIN' },
-        { username: 'vintage_seller', email: 'seller@lacachinaonline.pe', displayName: 'Tacora Thrift Seller', role: 'SELLER' },
-        { username: 'cliente_lima', email: 'cliente@gmail.com', displayName: 'Comprador Frecuente', role: 'CUSTOMER' },
       ]
     }
   },
 }
-

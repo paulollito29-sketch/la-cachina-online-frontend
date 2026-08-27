@@ -170,20 +170,32 @@ export default function Landing() {
               <div key={i} className="skeleton-product-card" />
             ))}
           </div>
-        ) : (
+        ) : displayedDrops.length > 0 ? (
           <div className="products-grid-modern">
             {displayedDrops.map(product => (
               <ProductCard key={product.idProduct} product={product} />
             ))}
           </div>
+        ) : (
+          <div className="empty-drop-state-card">
+            <span className="empty-drop-icon">📦</span>
+            <h3>Próximo Drop en Preparación</h3>
+            <p>Nuestro equipo de cazadores de tesoros está preparando el próximo lanzamiento de archivo vintage.</p>
+            <Link to="/admin" className="btn-outline-luxury small">
+              <span>Publicar prendas desde el panel Admin</span>
+              <span className="icon">→</span>
+            </Link>
+          </div>
         )}
 
-        <div className="section-footer-centered">
-          <Link to="/tienda" className="btn-primary-luxury large">
-            <span>Ver Todo el Inventario ({featuredProducts.length} Prendas)</span>
-            <span className="icon">→</span>
-          </Link>
-        </div>
+        {featuredProducts.length > 0 && (
+          <div className="section-footer-centered">
+            <Link to="/tienda" className="btn-primary-luxury large">
+              <span>Ver Todo el Inventario ({featuredProducts.length} Prendas)</span>
+              <span className="icon">→</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* ─── 4. INTERSTITIAL MANIFESTO ─── */}
