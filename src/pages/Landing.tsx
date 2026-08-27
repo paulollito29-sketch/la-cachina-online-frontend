@@ -1,196 +1,321 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { productApi } from '../services/api'
 import ProductCard from '../components/ProductCard'
-import ScrollReveal from '../components/ScrollReveal'
-import { StaggerContainer, StaggerItem } from '../components/StaggerGrid'
-import VintageDust from '../components/VintageDust'
 import type { ProductSummary } from '../types/models'
 
-const categories = [
-  { icon: '👕', name: 'Polos' },
-  { icon: '👖', name: 'Pantalones' },
-  { icon: '🧥', name: 'Chaquetas' },
-  { icon: '👗', name: 'Vestidos' },
-  { icon: '👟', name: 'Calzado' },
-  { icon: '👜', name: 'Accesorios' },
-]
-
-const heroTextVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.3,
-    },
-  },
-}
-
-const heroChildVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  },
-}
-
 export default function Landing() {
-  const [featured, setFeatured] = useState<ProductSummary[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<ProductSummary[]>([])
+  const [activeDropCategory, setActiveDropCategory] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    productApi.getAll().then(setFeatured)
+    productApi.getAll()
+      .then(prods => setFeaturedProducts(prods))
+      .catch(() => setFeaturedProducts([]))
+      .finally(() => setLoading(false))
   }, [])
 
+  const displayedDrops = activeDropCategory
+    ? featuredProducts.filter(p => p.categoryId === activeDropCategory)
+    : featuredProducts.slice(0, 8)
+
+  const categoriesPreview = [
+    {
+      id: 1,
+      title: 'Casacas & Cortavientos',
+      tag: 'Cuero, Polar & Bombers 90s',
+      image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=80',
+    },
+    {
+      id: 2,
+      title: 'Jeans & Levi\'s 501',
+      tag: 'Denim Pesado & Cortes Baggy',
+      image: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=700&q=80',
+    },
+    {
+      id: 3,
+      title: 'Polos Gráficos & Band Tees',
+      tag: 'Rock, Hip Hop 90s & Skate',
+      image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80',
+    },
+    {
+      id: 4,
+      title: 'Camisas & Sedas Retro',
+      tag: 'Sedas Puras, Flores & Franela',
+      image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=700&q=80',
+    },
+  ]
+
   return (
-    <>
-      {/* ─── Hero ─── */}
-      <section
-        className="hero-section"
-        style={{ backgroundImage: `url(/assets/Vintage_leather_jacket_floating_._202607121545.jpeg)` }}
-      >
-        <div className="hero-overlay" />
-        <VintageDust density={50} />
-        <div className="hero-accent" />
-        <motion.div
-          className="hero-content"
-          variants={heroTextVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.span className="hero-eyebrow" variants={heroChildVariants}>
-            Vault Vintage
-          </motion.span>
-          <motion.h1 variants={heroChildVariants}>
-            Donde lo vintage<br />encuentra un nuevo hogar
-          </motion.h1>
-          <motion.p variants={heroChildVariants}>
-            Ropa de segunda mano seleccionada con cuidado. Piezas únicas con historia, esperando por ti.
-          </motion.p>
-          <motion.div variants={heroChildVariants}>
-            <Link to="/tienda" className="btn-primary btn-primary-glow">
-              Explorar tienda
+    <div className="landing-page-modern">
+      {/* ─── 1. EDITORIAL HERO SECTION ─── */}
+      <section className="hero-section-modern">
+        <div className="hero-content-inner">
+          <div className="hero-badge-pill">
+            <span className="sparkle">✦</span>
+            <span>LA CACHINA ONLINE · EL POINT VINTAGE DEL PERÚ</span>
+          </div>
+
+          <h1 className="hero-headline">
+            La Cachina, <br />
+            <em>ahora en digital.</em>
+          </h1>
+
+          <p className="hero-subheading">
+            Tesoros vintage, prendas de archivo y moda circular auténtica. Rescatamos las mejores piezas de segunda mano para que encuentres tu estilo con esquina y carácter.
+          </p>
+
+          <div className="hero-cta-group">
+            <Link to="/tienda" className="btn-primary-luxury">
+              <span>Explorar el Mercado</span>
+              <span className="icon">→</span>
             </Link>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ─── Cómo funciona ─── */}
-      <ScrollReveal>
-        <section className="section" id="como-funciona">
-          <div className="section-inner">
-            <ScrollReveal delay={0.1}>
-              <h2 className="section-title">Cómo funciona</h2>
-            </ScrollReveal>
-            <StaggerContainer className="steps-grid">
-              {[
-                { num: '1', title: 'Explora', desc: 'Navega por nuestras categorías y encuentra lo que buscas.' },
-                { num: '2', title: 'Elige', desc: 'Cada pieza tiene su propia historia. Revisa el estado y talla.' },
-                { num: '3', title: 'Lleva', desc: 'Agrega al carrito y coordina la entrega. Simple y seguro.' },
-              ].map((step) => (
-                <StaggerItem key={step.num}>
-                  <div className="step-card">
-                    <span className="step-number step-number-pulse">{step.num}</span>
-                    <h3>{step.title}</h3>
-                    <p>{step.desc}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
           </div>
-        </section>
-      </ScrollReveal>
 
-      {/* ─── Image-between 1 ─── */}
-      <section
-        className="section section-image-between"
-        style={{ backgroundImage: `url(/assets/Workers_inspect_vintage_clothes_2K_202607121545.jpeg)` }}
-      >
-        <div className="section-overlay" />
-        <div className="section-inner">
-          <ScrollReveal direction="left">
-            <div className="image-between-content">
-              <span className="image-between-eyebrow">Detrás de cada prenda</span>
-              <h2>Selección cuidadosa,<br />restauración dedicada</h2>
-              <p>Cada pieza que llega a Vault Vintage pasa por un proceso de inspección, limpieza y restauración. No vendemos ropa usada — vendemos historias renovadas.</p>
+          <div className="hero-trust-metrics">
+            <div className="metric-item">
+              <span className="metric-number">100%</span>
+              <span className="metric-label">Piezas Únicas</span>
             </div>
-          </ScrollReveal>
+            <div className="metric-divider" />
+            <div className="metric-item">
+              <span className="metric-number">★ 4.9</span>
+              <span className="metric-label">Curaduría de Estado</span>
+            </div>
+            <div className="metric-divider" />
+            <div className="metric-item">
+              <span className="metric-number">24h</span>
+              <span className="metric-label">Envíos Lima & Shalom</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ─── Categorías ─── */}
-      <section className="section section-dark">
-        <div className="section-inner">
-          <ScrollReveal>
-            <h2 className="section-title">Categorías</h2>
-          </ScrollReveal>
-          <StaggerContainer className="categories-grid">
-            {categories.map(cat => (
-              <StaggerItem key={cat.name}>
-                <Link to="/tienda" className="category-card category-card-hover">
-                  <span className="category-icon">{cat.icon}</span>
-                  <span className="category-name">{cat.name}</span>
-                </Link>
-              </StaggerItem>
+      {/* ─── 2. CATEGORY EDITORIAL CARDS ─── */}
+      <section className="section-categories-modern">
+        <div className="section-header-modern">
+          <div>
+            <span className="section-eyebrow">✦ ELIGE TU ESTILO</span>
+            <h2 className="section-title-modern">Colecciones de Archivo</h2>
+          </div>
+          <Link to="/tienda" className="view-all-link desktop-only">
+            Ver todas las categorías →
+          </Link>
+        </div>
+
+        <div className="category-cards-grid">
+          {categoriesPreview.map(cat => (
+            <Link
+              key={cat.id}
+              to={`/tienda?category=${cat.id}`}
+              className="category-card-modern"
+              style={{ backgroundImage: `url(${cat.image})` }}
+            >
+              <div className="category-card-overlay" />
+              <div className="category-card-content">
+                <span className="cat-tag">{cat.tag}</span>
+                <h3 className="cat-title">{cat.title}</h3>
+                <span className="cat-explore-btn">Explorar piezas →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── 3. WEEKLY DROPS / CURATED SELECTION ─── */}
+      <section className="section-drops-modern">
+        <div className="section-header-modern">
+          <div>
+            <span className="section-eyebrow">✦ JOYAS RECIÉN LLEGADAS</span>
+            <h2 className="section-title-modern">Drops de la Semana</h2>
+          </div>
+
+          {/* Quick Drop Category Filters */}
+          <div className="drop-filter-tabs">
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === null ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(null)}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === 1 ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(1)}
+            >
+              Casacas
+            </button>
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === 2 ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(2)}
+            >
+              Jeans 501
+            </button>
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === 3 ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(3)}
+            >
+              Band Tees
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="products-grid-modern">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton-product-card" />
             ))}
-          </StaggerContainer>
+          </div>
+        ) : (
+          <div className="products-grid-modern">
+            {displayedDrops.map(product => (
+              <ProductCard key={product.idProduct} product={product} />
+            ))}
+          </div>
+        )}
+
+        <div className="section-footer-centered">
+          <Link to="/tienda" className="btn-primary-luxury large">
+            <span>Ver Todo el Inventario ({featuredProducts.length} Prendas)</span>
+            <span className="icon">→</span>
+          </Link>
         </div>
       </section>
 
-      {/* ─── Productos destacados ─── */}
-      <ScrollReveal>
-        <section className="section">
-          <div className="section-inner">
-            <ScrollReveal delay={0.1}>
-              <h2 className="section-title">Productos destacados</h2>
-            </ScrollReveal>
-            <StaggerContainer className="products-grid">
-              {featured.slice(0, 4).map(p => (
-                <StaggerItem key={p.idProduct}>
-                  <ProductCard product={p} />
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
-            <div className="section-cta">
-              <Link to="/tienda" className="btn-outline">Ver todos</Link>
+      {/* ─── 4. INTERSTITIAL MANIFESTO ─── */}
+      <section className="section-interstitial" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1600&q=80)` }}>
+        <div className="interstitial-overlay" />
+        <div className="interstitial-card">
+          <span className="interstitial-badge">✦ MANIFIESTO CACHINERO</span>
+          <h2>El arte de rescatar lo auténtico</h2>
+          <p>
+            En La Cachina Online creemos que la mejor prenda ya fue fabricada. Buscamos prenda por prenda en mercadillos y archivos históricos del Perú para traerte joyas con historia, pátina real y calidad que ya no se fabrica.
+          </p>
+          <div className="interstitial-features">
+            <div className="int-feature">
+              <span className="int-feature-num">01</span>
+              <div>
+                <strong>Cero Fast-Fashion</strong>
+                <p>Prendas confeccionadas con materiales de calidad superior hechos para durar décadas.</p>
+              </div>
+            </div>
+            <div className="int-feature">
+              <span className="int-feature-num">02</span>
+              <div>
+                <strong>Lavado & Desinfección Profesional</strong>
+                <p>Cada pieza pasa por un proceso de higienización y restauración antes de salir a la venta.</p>
+              </div>
+            </div>
+            <div className="int-feature">
+              <span className="int-feature-num">03</span>
+              <div>
+                <strong>Economía Circular Peruana</strong>
+                <p>Reducimos el impacto ambiental y fomentamos el consumo consciente y local.</p>
+              </div>
             </div>
           </div>
-        </section>
-      </ScrollReveal>
-
-      {/* ─── Image-between 2 ─── */}
-      <section
-        className="section section-image-between"
-        style={{ backgroundImage: `url(/assets/Vintage_storefront_diorama_2K_202607121545.jpeg)` }}
-      >
-        <div className="section-overlay" />
-        <div className="section-inner">
-          <ScrollReveal direction="right">
-            <div className="image-between-content image-between-right">
-              <span className="image-between-eyebrow">La tienda</span>
-              <h2>Un escaparate<br />que cambia contigo</h2>
-              <p>Desde chaquetas de los 70 hasta sedas de los 90. Cada colección es una cápsula curada con piezas únicas que no se repiten.</p>
-              <Link to="/tienda" className="btn-primary">Visitar tienda</Link>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
-      {/* ─── Contacto ─── */}
-      <ScrollReveal>
-        <section className="section section-cream" id="contacto">
-          <div className="section-inner">
-            <h2 className="section-title">¿Tienes ropa para vender?</h2>
-            <p className="section-text">
-              Contáctanos y dale una segunda vida a tus prendas. Seleccionamos piezas en buen estado
-              y las preparamos para un nuevo dueño.
+      {/* ─── 5. HOW IT WORKS ─── */}
+      <section className="section-how-it-works">
+        <div className="section-header-centered">
+          <span className="section-eyebrow">✦ EXPERIENCIA LA CACHINA</span>
+          <h2 className="section-title-modern">¿Cómo Funciona?</h2>
+        </div>
+
+        <div className="steps-cards-modern">
+          <div className="step-card-modern">
+            <div className="step-badge-number">01</div>
+            <div className="step-icon-modern">🔍</div>
+            <h3>Curaduría de Archivo</h3>
+            <p>Seleccionamos lotes vintage por época, estado de conservación, autenticidad y corte de silueta.</p>
+          </div>
+
+          <div className="step-card-modern">
+            <div className="step-badge-number">02</div>
+            <div className="step-icon-modern">✨</div>
+            <h3>Inspección & Sanitizado</h3>
+            <p>Evaluamos costuras, cierres y tejidos. Asignamos una calificación de 1 a 5 estrellas con total transparencia.</p>
+          </div>
+
+          <div className="step-card-modern">
+            <div className="step-badge-number">03</div>
+            <div className="step-icon-modern">📦</div>
+            <h3>Envío Seguro a tu Puerta</h3>
+            <p>Empaque ecológico biodegradable. Envíos express a Lima en 24h y a provincias vía Shalom / Olva.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 6. REVIEWS & COMMUNITY ─── */}
+      <section className="section-reviews">
+        <div className="section-header-centered">
+          <span className="section-eyebrow">✦ COMUNIDAD CACHINERA</span>
+          <h2 className="section-title-modern">Lo que dicen los coleccionistas</h2>
+        </div>
+
+        <div className="reviews-grid">
+          <div className="review-card-modern">
+            <div className="review-stars">★★★★★</div>
+            <p className="review-text">
+              "Encontré una casaca de cuero 80s idéntica a la que buscaba hace años. Llegó impecable y sanitizada en menos de 24 horas a Miraflores."
             </p>
-            <a href="mailto:hola@vaultvintage.pe" className="btn-primary">Escríbenos</a>
+            <div className="review-footer">
+              <strong className="review-author-name">Mateo Z. <span className="review-author-city">· Miraflores, Lima</span></strong>
+              <span className="review-item-tag">Compró: Casaca Aviador 1980s</span>
+            </div>
           </div>
-        </section>
-      </ScrollReveal>
-    </>
+
+          <div className="review-card-modern">
+            <div className="review-stars">★★★★★</div>
+            <p className="review-text">
+              "Los Levi's 501 son 100% originales Made in USA con un desvanecimiento increíble. La mejor tienda vintage online del Perú sin duda."
+            </p>
+            <div className="review-footer">
+              <strong className="review-author-name">Valeria M. <span className="review-author-city">· Barranco, Lima</span></strong>
+              <span className="review-item-tag">Compró: Levi's 501 Selvedge</span>
+            </div>
+          </div>
+
+          <div className="review-card-modern">
+            <div className="review-stars">★★★★★</div>
+            <p className="review-text">
+              "El polo de Nirvana In Utero es una joya. Se nota que cada prenda tiene una historia y está seleccionada con muchísimo criterio."
+            </p>
+            <div className="review-footer">
+              <strong className="review-author-name">Rodrigo S. <span className="review-author-city">· Arequipa</span></strong>
+              <span className="review-item-tag">Compró: Band Tee Nirvana 1993</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 7. SELL YOUR PIECES BANNER ─── */}
+      <section className="section-sell-banner">
+        <div className="sell-banner-box">
+          <div className="sell-banner-content">
+            <span className="sell-eyebrow">✦ VENDE EN LA CACHINA</span>
+            <h2>¿Tienes ropa vintage o de archivo guardada?</h2>
+            <p>
+              Compramos lotes de prendas retro, casacas de cuero, camisetas gráficas y reliquias en buen estado. Dale una segunda vida a tu ropa y gana dinero al instante.
+            </p>
+            <a
+              href="https://wa.me/51999888777?text=Hola%20La%20Cachina%20Online,%20quiero%20vender%20prendas%20vintage"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary-luxury"
+            >
+              <span>Vender con Nosotros vía WhatsApp</span>
+              <span className="icon">💬</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }

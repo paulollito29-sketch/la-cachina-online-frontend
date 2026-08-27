@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CartProvider } from './components/CartContext'
 import { AuthProvider } from './components/AuthContext'
+import { ToastProvider } from './components/ToastContext'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Landing from './pages/Landing'
@@ -20,12 +21,12 @@ const pageVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
   exit: {
     opacity: 0,
     y: -8,
-    transition: { duration: 0.25 },
+    transition: { duration: 0.2 },
   },
 }
 
@@ -40,6 +41,7 @@ function AnimatedRoutes() {
         initial="initial"
         animate="animate"
         exit="exit"
+        className="main-route-wrapper"
       >
         <Routes location={location}>
           <Route path="/" element={<Landing />} />
@@ -61,13 +63,15 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <div className="app">
-            <Header />
-            <AnimatedRoutes />
-            <Footer />
-          </div>
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <div className="app">
+              <Header />
+              <AnimatedRoutes />
+              <Footer />
+            </div>
+          </CartProvider>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )

@@ -29,29 +29,29 @@ export default function ForgotPassword() {
 
   if (done) {
     return (
-      <div className="page-center">
-        <div className="cart-done" style={{ maxWidth: 420 }}>
-          <h2>Revisa tu correo</h2>
-          <p style={{ color: 'var(--gray-500)' }}>
-            Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.
-          </p>
+      <div className="page-center-modern">
+        <div className="auth-card-modern">
+          <div className="auth-card-header">
+            <div className="success-icon-badge">✓</div>
+            <h2>Revisa tu bandeja</h2>
+            <p>Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.</p>
+          </div>
+
           {resetToken && (
-            <div style={{ background: 'var(--gray-100)', padding: '1rem', borderRadius: 'var(--radius)', fontSize: '0.85rem', margin: '1rem 0' }}>
-              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>🔧 Modo desarrollo:</p>
-              <p style={{ marginBottom: '0.5rem', color: 'var(--gray-500)' }}>
-                Token de recuperación (cópialo):
-              </p>
-              <code style={{ wordBreak: 'break-all', fontSize: '0.75rem' }}>{resetToken}</code>
-              <p style={{ marginTop: '0.75rem' }}>
-                <Link to={`/reset-password?token=${resetToken}`} style={{ color: 'var(--gold-dark)', fontWeight: 600 }}>
-                  → Ir a restablecer contraseña
-                </Link>
-              </p>
+            <div className="dev-token-box">
+              <span className="dev-token-badge">Modo desarrollo</span>
+              <p>Token de recuperación generado:</p>
+              <code>{resetToken}</code>
+              <Link to={`/reset-password?token=${resetToken}`} className="btn-primary-luxury full-width" style={{ marginTop: '1rem' }}>
+                <span>Restablecer Contraseña Ahora →</span>
+              </Link>
             </div>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-            <Link to="/login" className="btn-primary">Volver a iniciar sesión</Link>
-            <Link to="/" className="back-link">← Volver a la tienda</Link>
+
+          <div className="auth-card-footer">
+            <Link to="/login" className="btn-outline-luxury full-width">
+              <span>Volver a Iniciar Sesión</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -59,28 +59,53 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="page-center">
-      <form className="login-form" onSubmit={handleSubmit}>
-        <h2>Recuperar contraseña</h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--gray-500)', textAlign: 'center' }}>
-          Ingresa tu correo y te enviaremos las instrucciones.
-        </p>
-        {error && <p className="form-error">{error}</p>}
-        <input
-          type="email"
-          placeholder="Tu correo electrónico"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'Enviando...' : 'Enviar instrucciones'}
-        </button>
-        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--gray-500)' }}>
-          <Link to="/login" style={{ color: 'var(--gold-dark)', fontWeight: 600 }}>Volver a iniciar sesión</Link>
+    <div className="page-center-modern">
+      <div className="auth-card-modern">
+        <div className="auth-card-header">
+          <div className="brand-monogram medium">
+            <span className="monogram-text">LC</span>
+          </div>
+          <span className="auth-eyebrow">✦ SEGURIDAD LA CACHINA ONLINE</span>
+          <h2>Recuperar Contraseña</h2>
+          <p>Ingresa tu correo y te enviaremos las instrucciones de acceso.</p>
         </div>
-        <Link to="/" className="back-link">← Volver a la tienda</Link>
-      </form>
+
+        {error && <div className="auth-error-banner">{error}</div>}
+
+        <form className="auth-form-body" onSubmit={handleSubmit}>
+          <div className="form-group-modern">
+            <label>Correo Electrónico Registrado</label>
+            <input
+              type="email"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn-primary-luxury btn-auth-submit full-width"
+            disabled={saving}
+          >
+            <span>{saving ? 'Enviando enlace...' : 'Enviar Instrucciones'}</span>
+            <span className="icon">→</span>
+          </button>
+        </form>
+
+        <div className="auth-card-footer">
+          <p>
+            ¿Recordaste tu contraseña?{' '}
+            <Link to="/login" className="auth-switch-link">
+              Inicia sesión
+            </Link>
+          </p>
+          <Link to="/" className="back-home-link">
+            ← Volver a la tienda
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

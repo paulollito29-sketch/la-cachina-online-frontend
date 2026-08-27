@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
+import { useToast } from '../components/ToastContext'
 import { categoryApi, productApi, customerApi, saleApi } from '../services/api'
 import type { Category, ProductSummary, ProductCreate } from '../types/models'
 
-type Tab = 'dashboard' | 'categories' | 'products'
+type Tab = 'dashboard' | 'products' | 'categories'
 
 const emptyProduct: ProductCreate = {
-  name: '', description: '', price: 0, size: '', condition: 3,
-  imageUrl: '', categoryId: 0, available: true, sex: 'U',
+  name: '', description: '', price: 0, size: 'M', condition: 4,
+  imageUrl: '', images: [], categoryId: 1, available: true, sex: 'U',
 }
 
 interface DashboardStats {
@@ -16,6 +17,7 @@ interface DashboardStats {
   categories: number
   sales: number
   customers: number
+  revenue: number
 }
 
 export default function Admin() {
@@ -30,63 +32,532 @@ export default function Admin() {
   if (!user || user.role !== 'ADMIN') return null
 
   return (
-    <div className="admin-page">
-      <h1>Panel de Administración</h1>
-      <nav className="admin-tabs">
-        <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>Dashboard</button>
-        <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categorías</button>
-        <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Productos</button>
-      </nav>
-      {tab === 'dashboard' && <AdminDashboard />}
-      {tab === 'categories' && <AdminCategories />}
-      {tab === 'products' && <AdminProducts />}
+    <div className="admin-page-modern">
+      <div className="admin-header-bar">
+        <div className="admin-header-title">
+          <div className="brand-monogram small">
+            <span className="monogram-text">LC</span>
+          </div>
+          <div>
+            <h1>Panel de Administración</h1>
+            <p>Control de inventario, archivo de piezas y métricas de La Cachina Online</p>
+          </div>
+        </div>
+
+        <nav className="admin-nav-tabs">
+          <button className={`admin-tab-btn ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
+            📊 Dashboard
+          </button>
+          <button className={`admin-tab-btn ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
+            🏷️ Productos
+          </button>
+          <button className={`admin-tab-btn ${tab === 'categories' ? 'active' : ''}`} onClick={() => setTab('categories')}>
+            📂 Categorías
+          </button>
+        </nav>
+      </div>
+
+      <div className="admin-tab-content">
+        {tab === 'dashboard' && <AdminDashboard />}
+        {tab === 'products' && <AdminProducts />}
+        {tab === 'categories' && <AdminCategories />}
+      </div>
     </div>
   )
 }
 
 function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({ products: 0, categories: 0, sales: 0, customers: 0 })
+  const [stats, setStats] = useState<DashboardStats>({ products: 0, categories: 0, sales: 0, customers: 0, revenue: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
-      productApi.getAll().then(p => p.length),
-      categoryApi.getAll().then(c => c.length),
-      saleApi.getAll().then(s => s.length),
-      customerApi.getAll().then(c => c.length),
+      productApi.getAll(),
+      categoryApi.getAll(),
+      saleApi.getAll(),
+      customerApi.getAll(),
     ])
-      .then(([products, categories, sales, customers]) => {
-        setStats({ products, categories, sales, customers })
+      .then(([prods, cats, sales, customers]) => {
+        const rev = sales.reduce((acc, s) => acc + (s.total || s.subTotal || 0), 0)
+        setStats({
+          products: prods.length,
+          categories: cats.length,
+          sales: sales.length,
+          customers: customers.length,
+          revenue: rev,
+        })
       })
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="loading">Cargando estadísticas...</div>
+  if (loading) return <div className="admin-loading">Cargando métricas del sistema...</div>
 
-  const cards = [
-    { icon: '👕', value: stats.products, label: 'Productos' },
-    { icon: '📂', value: stats.categories, label: 'Categorías' },
-    { icon: '🧾', value: stats.sales, label: 'Ventas' },
-    { icon: '👤', value: stats.customers, label: 'Clientes' },
+  const metricCards = [
+    { title: 'Prendas en Archivo', value: stats.products, icon: '👕', badge: 'Catálogo activo' },
+    { title: 'Categorías Activas', value: stats.categories, icon: '📂', badge: `${stats.categories} colecciones` },
+    { title: 'Ventas Registradas', value: stats.sales, icon: '🧾', badge: '100% verificado' },
+    { title: 'Ingresos Totales', value: `S/ ${stats.revenue.toFixed(2)}`, icon: '💰', badge: 'Moda circular' },
   ]
 
   return (
-    <>
-      <div className="admin-dashboard">
-        {cards.map(card => (
-          <div key={card.label} className="dashboard-card">
-            <div className="dashboard-card-icon">{card.icon}</div>
-            <div className="dashboard-card-value">{card.value}</div>
-            <div className="dashboard-card-label">{card.label}</div>
+    <div className="admin-dashboard-view">
+      <div className="admin-stats-grid">
+        {metricCards.map((card, idx) => (
+          <div key={idx} className="admin-stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-icon">{card.icon}</span>
+              <span className="stat-badge">{card.badge}</span>
+            </div>
+            <div className="stat-card-value">{card.value}</div>
+            <div className="stat-card-title">{card.title}</div>
           </div>
         ))}
       </div>
-      <div className="admin-section">
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Bienvenido al panel de administración de Vault Vintage. Gestiona tus categorías y productos desde aquí.
+
+      <div className="admin-quick-summary-box">
+        <h3>✦ Gestión de Inventario & Galería de Imágenes</h3>
+        <p>
+          Ahora puedes subir hasta <strong>5 imágenes por prenda</strong> tanto mediante <strong>subida de archivos locales</strong> como mediante <strong>enlaces URL</strong>. La primera imagen actuará como portada principal en el catálogo.
         </p>
       </div>
-    </>
+    </div>
+  )
+}
+
+function AdminProducts() {
+  const [products, setProducts] = useState<ProductSummary[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [form, setForm] = useState<ProductCreate>(emptyProduct)
+  const [imageList, setImageList] = useState<string[]>([])
+  const [inputUrl, setInputUrl] = useState('')
+  const [editing, setEditing] = useState<number | null>(null)
+  const [error, setError] = useState('')
+  const [filterSearch, setFilterSearch] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToast()
+
+  const load = () => {
+    Promise.all([productApi.getAll(), categoryApi.getAll()]).then(([p, c]) => {
+      setProducts(p)
+      setCategories(c)
+    })
+  }
+
+  useEffect(() => { load() }, [])
+
+  // Sync imageList into form.images and form.imageUrl
+  const updateImages = (newImages: string[]) => {
+    const limited = newImages.slice(0, 5)
+    setImageList(limited)
+    setForm(prev => ({
+      ...prev,
+      images: limited,
+      imageUrl: limited[0] || '',
+    }))
+  }
+
+  // Handle local file selection
+  const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const availableSlots = 5 - imageList.length
+    if (availableSlots <= 0) {
+      showToast('Límite alcanzado', 'Solo puedes añadir un máximo de 5 imágenes por prenda.', 'warning')
+      return
+    }
+
+    const filesToRead = Array.from(files).slice(0, availableSlots)
+    const readPromises = filesToRead.map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          resolve(event.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+      })
+    })
+
+    Promise.all(readPromises).then(base64Array => {
+      const combined = [...imageList, ...base64Array].slice(0, 5)
+      updateImages(combined)
+      showToast('Imágenes añadidas', `${base64Array.length} foto(s) cargadas localmente.`, 'success')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    })
+  }
+
+  // Handle URL Add
+  const handleAddUrl = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault()
+    if (!inputUrl.trim()) return
+
+    if (imageList.length >= 5) {
+      showToast('Límite de imágenes', 'Máximo 5 imágenes por producto.', 'warning')
+      return
+    }
+
+    const trimmed = inputUrl.trim()
+    const updated = [...imageList, trimmed].slice(0, 5)
+    updateImages(updated)
+    setInputUrl('')
+    showToast('Imagen añadida', 'URL registrada correctamente.', 'success')
+  }
+
+  const handleRemoveImage = (index: number) => {
+    const updated = imageList.filter((_, idx) => idx !== index)
+    updateImages(updated)
+  }
+
+  const handleSetCover = (index: number) => {
+    if (index === 0) return
+    const selected = imageList[index]
+    const rest = imageList.filter((_, idx) => idx !== index)
+    const reordered = [selected, ...rest]
+    updateImages(reordered)
+    showToast('Portada actualizada', 'La imagen seleccionada ahora es la foto principal.', 'info')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    const finalImages = imageList.length > 0
+      ? imageList.slice(0, 5)
+      : (form.imageUrl ? [form.imageUrl] : [])
+
+    const payload: ProductCreate = {
+      ...form,
+      images: finalImages,
+      imageUrl: finalImages[0] || '',
+    }
+
+    try {
+      if (editing) {
+        await productApi.update(editing, payload)
+        showToast('Prenda actualizada', form.name, 'success')
+      } else {
+        await productApi.create(payload)
+        showToast('Prenda añadida al catálogo', form.name, 'success')
+      }
+      setForm(emptyProduct)
+      setImageList([])
+      setInputUrl('')
+      setEditing(null)
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar prenda')
+    }
+  }
+
+  const startEdit = async (id: number) => {
+    try {
+      const p = await productApi.getOne(id)
+      const initialImgs = (p.images && p.images.length > 0)
+        ? p.images.slice(0, 5)
+        : (p.imageUrl ? [p.imageUrl] : [])
+
+      setForm({
+        name: p.name, description: p.description || '', price: p.price,
+        size: p.size || '', condition: p.condition, imageUrl: initialImgs[0] || '',
+        images: initialImgs, categoryId: p.categoryId, available: p.available, sex: p.sex || 'U',
+      })
+      setImageList(initialImgs)
+      setEditing(id)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar prenda para edición')
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar esta prenda del archivo?')) return
+    try {
+      await productApi.delete(id)
+      showToast('Prenda eliminada', '', 'info')
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error')
+    }
+  }
+
+  const filteredProds = products.filter(p =>
+    p.name.toLowerCase().includes(filterSearch.toLowerCase()) ||
+    p.categoryName?.toLowerCase().includes(filterSearch.toLowerCase())
+  )
+
+  return (
+    <div className="admin-section-grid">
+      {/* Product Form Card */}
+      <form className="admin-card-box" onSubmit={handleSubmit}>
+        <div className="admin-form-header">
+          <h3>{editing ? '✏️ Editar Prenda' : '➕ Nueva Prenda al Archivo'}</h3>
+          {editing && (
+            <button
+              type="button"
+              className="btn-cancel-edit"
+              onClick={() => { setForm(emptyProduct); setImageList([]); setEditing(null) }}
+            >
+              Cancelar Edición
+            </button>
+          )}
+        </div>
+
+        {error && <div className="admin-error-banner">{error}</div>}
+
+        <div className="admin-form-fields-grid">
+          <div className="form-group-modern">
+            <label>Nombre de la prenda</label>
+            <input
+              value={form.name}
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+              placeholder="Ej: Chaqueta Aviador 1980s"
+              required
+            />
+          </div>
+
+          <div className="form-group-modern">
+            <label>Categoría</label>
+            <select
+              value={form.categoryId}
+              onChange={e => setForm(p => ({ ...p, categoryId: Number(e.target.value) }))}
+              required
+            >
+              {categories.map(c => (
+                <option key={c.idCategory} value={c.idCategory}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group-modern">
+            <label>Precio (S/)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={form.price || ''}
+              onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))}
+              placeholder="Ej. 240.00"
+              required
+            />
+          </div>
+
+          <div className="form-group-modern">
+            <label>Talla</label>
+            <input
+              value={form.size || ''}
+              onChange={e => setForm(p => ({ ...p, size: e.target.value }))}
+              placeholder="Ej: S, M, L, XL, 32/32"
+            />
+          </div>
+
+          <div className="form-group-modern">
+            <label>Nivel de Condición</label>
+            <select
+              value={form.condition}
+              onChange={e => setForm(p => ({ ...p, condition: Number(e.target.value) }))}
+            >
+              <option value={5}>★★★★★ (5/5 Impecable)</option>
+              <option value={4}>★★★★☆ (4/5 Excelente)</option>
+              <option value={3}>★★★☆☆ (3/5 Muy Bueno)</option>
+              <option value={2}>★★☆☆☆ (2/5 Con Historia)</option>
+            </select>
+          </div>
+
+          <div className="form-group-modern">
+            <label>Género / Silueta</label>
+            <select
+              value={form.sex || 'U'}
+              onChange={e => setForm(p => ({ ...p, sex: e.target.value }))}
+            >
+              <option value="U">Unisex</option>
+              <option value="M">Hombre</option>
+              <option value="F">Mujer</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ─── Multi-Image Uploader (Max 5) ─── */}
+        <div className="image-manager-block">
+          <div className="image-manager-header">
+            <label className="image-manager-label">
+              📸 Galería de Imágenes <span>(Máximo 5 fotos)</span>
+            </label>
+            <span className={`image-count-indicator ${imageList.length >= 5 ? 'max-reached' : ''}`}>
+              {imageList.length} / 5 imágenes
+            </span>
+          </div>
+
+          {/* Option 1: File Upload */}
+          <div className="image-upload-methods">
+            <div className="file-upload-dropzone">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                id="file-upload-input"
+                className="hidden-file-input"
+                onChange={handleFilesSelect}
+                disabled={imageList.length >= 5}
+              />
+              <label htmlFor="file-upload-input" className={`dropzone-label ${imageList.length >= 5 ? 'disabled' : ''}`}>
+                <span className="dropzone-icon">📁</span>
+                <span className="dropzone-text">
+                  <strong>Subir fotos locales</strong> o arrastra aquí (JPG, PNG, WebP)
+                </span>
+                <span className="dropzone-hint">Puedes seleccionar múltiples archivos a la vez</span>
+              </label>
+            </div>
+
+            {/* Option 2: Add by URL */}
+            <div className="url-add-bar">
+              <input
+                type="url"
+                placeholder="O pega una URL de imagen (https://...)"
+                value={inputUrl}
+                onChange={e => setInputUrl(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddUrl(e) }}
+                disabled={imageList.length >= 5}
+              />
+              <button
+                type="button"
+                className="btn-add-url"
+                onClick={handleAddUrl}
+                disabled={!inputUrl.trim() || imageList.length >= 5}
+              >
+                + Añadir URL
+              </button>
+            </div>
+          </div>
+
+          {/* Image Previews Grid */}
+          {imageList.length > 0 && (
+            <div className="image-previews-strip">
+              {imageList.map((img, idx) => (
+                <div key={idx} className={`preview-item-card ${idx === 0 ? 'is-cover' : ''}`}>
+                  <img src={img} alt={`Prenda foto ${idx + 1}`} />
+                  <div className="preview-item-badge">
+                    {idx === 0 ? '★ Portada' : `#${idx + 1}`}
+                  </div>
+                  <div className="preview-item-actions">
+                    {idx !== 0 && (
+                      <button
+                        type="button"
+                        className="btn-action-cover"
+                        onClick={() => handleSetCover(idx)}
+                        title="Hacer foto principal"
+                      >
+                        ★
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-action-delete"
+                      onClick={() => handleRemoveImage(idx)}
+                      title="Eliminar foto"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="form-group-modern">
+          <label>Descripción & Detalles de la pieza</label>
+          <textarea
+            value={form.description || ''}
+            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            placeholder="Describe la época, material, detalles de confección y estado..."
+            rows={3}
+          />
+        </div>
+
+        <div className="form-group-checkbox">
+          <label className="checkbox-label-modern">
+            <input
+              type="checkbox"
+              checked={form.available}
+              onChange={e => setForm(p => ({ ...p, available: e.target.checked }))}
+            />
+            <span className="checkbox-custom" />
+            <span>Prenda disponible para la venta inmediata</span>
+          </label>
+        </div>
+
+        <button type="submit" className="btn-primary-luxury full-width">
+          <span>{editing ? 'Guardar Cambios' : 'Publicar en Catálogo'}</span>
+          <span className="icon">→</span>
+        </button>
+      </form>
+
+      {/* Inventory List with Live Search */}
+      <div className="admin-inventory-card">
+        <div className="inventory-header">
+          <div>
+            <h3>Inventario de Prendas</h3>
+            <span className="inventory-count-tag">{filteredProds.length} registradas</span>
+          </div>
+
+          <input
+            type="text"
+            className="inventory-search-input"
+            placeholder="Buscar en inventario..."
+            value={filterSearch}
+            onChange={e => setFilterSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="admin-products-table-list">
+          {filteredProds.map(p => {
+            const count = p.images?.length || 1
+            return (
+              <div key={p.idProduct} className="admin-product-row">
+                <div className="admin-thumb-wrapper">
+                  <img
+                    src={p.imageUrl || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=120&q=80'}
+                    alt={p.name}
+                    className="admin-product-img"
+                  />
+                  {count > 1 && (
+                    <span className="admin-thumb-badge">📷 {count}</span>
+                  )}
+                </div>
+                <div className="admin-product-info">
+                  <h4>{p.name}</h4>
+                  <div className="admin-product-meta">
+                    <span>{p.categoryName}</span>
+                    <span>•</span>
+                    <span>Talla: <strong>{p.size || 'U'}</strong></span>
+                    <span>•</span>
+                    <span>★ {p.condition}/5</span>
+                    <span>•</span>
+                    <strong className="admin-price-tag">S/ {p.price.toFixed(2)}</strong>
+                  </div>
+                </div>
+                <div className="admin-actions-cell">
+                  <button
+                    type="button"
+                    className="btn-admin-edit"
+                    onClick={() => startEdit(p.idProduct)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-admin-delete"
+                    onClick={() => handleDelete(p.idProduct)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -96,6 +567,7 @@ function AdminCategories() {
   const [desc, setDesc] = useState('')
   const [editing, setEditing] = useState<number | null>(null)
   const [error, setError] = useState('')
+  const { showToast } = useToast()
 
   const load = () => categoryApi.getAll().then(setCategories)
   useEffect(() => { load() }, [])
@@ -106,13 +578,17 @@ function AdminCategories() {
     try {
       if (editing) {
         await categoryApi.update(editing, { name, description: desc })
+        showToast('Categoría actualizada', name, 'success')
       } else {
         await categoryApi.create({ name, description: desc })
+        showToast('Categoría creada', name, 'success')
       }
-      setName(''); setDesc(''); setEditing(null)
+      setName('')
+      setDesc('')
+      setEditing(null)
       load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
+      setError(err instanceof Error ? err.message : 'Error al guardar categoría')
     }
   }
 
@@ -126,6 +602,7 @@ function AdminCategories() {
     if (!confirm('¿Eliminar esta categoría?')) return
     try {
       await categoryApi.delete(id)
+      showToast('Categoría eliminada', '', 'info')
       load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
@@ -133,161 +610,72 @@ function AdminCategories() {
   }
 
   return (
-    <div className="admin-section">
-      <form className="admin-form" onSubmit={handleSubmit}>
-        <h3>{editing ? 'Editar categoría' : 'Nueva categoría'}</h3>
-        {error && <p className="form-error">{error}</p>}
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre" required />
-        <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripción (opcional)" />
-        <div className="admin-form-actions">
-          <button type="submit" className="btn-primary">{editing ? 'Guardar' : 'Agregar'}</button>
-          {editing && <button type="button" className="btn-clear" onClick={() => { setEditing(null); setName(''); setDesc('') }}>Cancelar</button>}
+    <div className="admin-section-grid">
+      <form className="admin-card-box" onSubmit={handleSubmit}>
+        <h3>{editing ? '✏️ Editar Categoría' : '➕ Nueva Categoría'}</h3>
+        {error && <div className="admin-error-banner">{error}</div>}
+
+        <div className="form-group-modern">
+          <label>Nombre de la Categoría</label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Ej. Chaquetas & Abrigos"
+            required
+          />
+        </div>
+
+        <div className="form-group-modern">
+          <label>Descripción de la Colección</label>
+          <textarea
+            value={desc}
+            onChange={e => setDesc(e.target.value)}
+            placeholder="Breve explicación de las prendas que abarca..."
+            rows={3}
+          />
+        </div>
+
+        <div className="admin-form-actions-row">
+          <button type="submit" className="btn-primary-luxury">
+            <span>{editing ? 'Guardar Cambios' : 'Crear Categoría'}</span>
+          </button>
+          {editing && (
+            <button
+              type="button"
+              className="btn-outline-luxury"
+              onClick={() => { setEditing(null); setName(''); setDesc('') }}
+            >
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
-      <div className="admin-list">
-        {categories.map(cat => (
-          <div key={cat.idCategory} className="admin-list-item">
-            <div className="admin-list-info">
-              <strong>{cat.name}</strong>
-              <span className="admin-list-meta">{cat.description} · {cat.productCount} productos</span>
-            </div>
-            <div className="admin-list-actions">
-              <button onClick={() => startEdit(cat)}>Editar</button>
-              <button className="delete" onClick={() => handleDelete(cat.idCategory)}>Eliminar</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
-function AdminProducts() {
-  const [products, setProducts] = useState<ProductSummary[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [form, setForm] = useState<ProductCreate>(emptyProduct)
-  const [editing, setEditing] = useState<number | null>(null)
-  const [error, setError] = useState('')
-
-  const load = () => Promise.all([productApi.getAll(), categoryApi.getAll()]).then(([p, c]) => { setProducts(p); setCategories(c) })
-  useEffect(() => { load() }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    try {
-      if (editing) {
-        await productApi.update(editing, form)
-      } else {
-        await productApi.create(form)
-      }
-      setForm(emptyProduct); setEditing(null)
-      load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
-    }
-  }
-
-  const startEdit = async (id: number) => {
-    try {
-      const p = await productApi.getOne(id)
-      setForm({
-        name: p.name, description: p.description || '', price: p.price,
-        size: p.size || '', condition: p.condition, imageUrl: p.imageUrl || '',
-        categoryId: p.categoryId, available: p.available, sex: p.sex || 'U',
-      })
-      setEditing(id)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este producto?')) return
-    try {
-      await productApi.delete(id)
-      load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
-    }
-  }
-
-  return (
-    <div className="admin-section">
-      <form className="admin-form admin-form-product" onSubmit={handleSubmit}>
-        <h3>{editing ? 'Editar producto' : 'Nuevo producto'}</h3>
-        {error && <p className="form-error">{error}</p>}
-        <div className="admin-form-grid">
-          <div className="admin-field">
-            <label>Nombre de la prenda</label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Chaqueta vaquera vintage" required />
-          </div>
-          <div className="admin-field">
-            <label>Categoría</label>
-            <select value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: Number(e.target.value) }))} required>
-              <option value={0}>— Seleccionar —</option>
-              {categories.map(c => <option key={c.idCategory} value={c.idCategory}>{c.name}</option>)}
-            </select>
-          </div>
-          <div className="admin-field">
-            <label>Precio (S/)</label>
-            <input type="number" step="0.01" value={form.price} onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))} placeholder="Ej: 89.90" required />
-          </div>
-          <div className="admin-field">
-            <label>Talla</label>
-            <input value={form.size || ''} onChange={e => setForm(p => ({ ...p, size: e.target.value }))} placeholder="Ej: M, L, 38, Única" />
-          </div>
-          <div className="admin-field">
-            <label>Estado (1–5 estrellas)</label>
-            <select value={form.condition} onChange={e => setForm(p => ({ ...p, condition: Number(e.target.value) }))}>
-              {[1,2,3,4,5].map(n => <option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5-n)} — {['','Aceptable','Bueno','Muy bueno','Excelente','Perfecto'][n]}</option>)}
-            </select>
-          </div>
-          <div className="admin-field">
-            <label>Sexo / Género</label>
-            <select value={form.sex || 'U'} onChange={e => setForm(p => ({ ...p, sex: e.target.value }))}>
-              <option value="U">⚤ Unisex — cualquier género</option>
-              <option value="M">♂ Masculino — hombre</option>
-              <option value="F">♀ Femenino — mujer</option>
-            </select>
-          </div>
-          <div className="admin-field">
-            <label className="admin-checkbox">
-              <input type="checkbox" checked={form.available} onChange={e => setForm(p => ({ ...p, available: e.target.checked }))} />
-              Disponible para la venta
-            </label>
-          </div>
+      <div className="admin-inventory-card">
+        <div className="inventory-header">
+          <h3>Categorías en el Sistema</h3>
+          <span className="inventory-count-tag">{categories.length} activas</span>
         </div>
-        <div className="admin-field">
-          <label>Descripción (opcional)</label>
-          <input value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Ej: Chaqueta vaquera de los 90, perfecto estado, talla M. Sin rotos ni manchas." />
-        </div>
-        <div className="admin-field">
-          <label>URL de imagen (opcional)</label>
-          <input value={form.imageUrl || ''} onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))} placeholder="Ej: https://ejemplo.com/mi-imagen.jpg — si no pones nada se usará una aleatoria" />
-        </div>
-        <div className="admin-form-actions">
-          <button type="submit" className="btn-primary">{editing ? 'Guardar' : 'Agregar'}</button>
-          {editing && <button type="button" className="btn-clear" onClick={() => { setForm(emptyProduct); setEditing(null) }}>Cancelar</button>}
-        </div>
-      </form>
-      <div className="admin-list">
-        {products.map(p => (
-          <div key={p.idProduct} className="admin-list-item">
-            <div className="admin-list-info">
-              <strong>{p.name}</strong>
-              <span className="admin-list-meta">
-                {categories.find(c => c.idCategory === p.categoryId)?.name || p.categoryName} · S/ {p.price.toFixed(2)} · {'★'.repeat(p.condition)}{'☆'.repeat(5-p.condition)}
-                {!p.available && ' · NO DISPONIBLE'}
-                {p.sex === 'M' ? ' · ♂' : p.sex === 'F' ? ' · ♀' : ' · ⚤'}
-              </span>
+
+        <div className="admin-categories-list">
+          {categories.map(cat => (
+            <div key={cat.idCategory} className="admin-category-row">
+              <div className="admin-category-info">
+                <h4>{cat.name}</h4>
+                <p>{cat.description || 'Sin descripción'}</p>
+                <span className="cat-product-count">{cat.productCount} prendas asignadas</span>
+              </div>
+              <div className="admin-actions-cell">
+                <button type="button" className="btn-admin-edit" onClick={() => startEdit(cat)}>
+                  Editar
+                </button>
+                <button type="button" className="btn-admin-delete" onClick={() => handleDelete(cat.idCategory)}>
+                  Eliminar
+                </button>
+              </div>
             </div>
-            <div className="admin-list-actions">
-              <button onClick={() => startEdit(p.idProduct)}>Editar</button>
-              <button className="delete" onClick={() => handleDelete(p.idProduct)}>Eliminar</button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )

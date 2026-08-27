@@ -16,6 +16,7 @@ export interface ProductSummary {
   size: string
   condition: number
   imageUrl: string
+  images?: string[]
   categoryId: number
   categoryName: string
   available: boolean
@@ -30,6 +31,7 @@ export interface ProductDetail {
   size: string
   condition: number
   imageUrl: string
+  images?: string[]
   categoryId: number
   categoryName: string
   available: boolean
@@ -43,6 +45,7 @@ export interface ProductCreate {
   size?: string
   condition: number
   imageUrl?: string
+  images?: string[]
   categoryId: number
   available: boolean
   sex?: string
