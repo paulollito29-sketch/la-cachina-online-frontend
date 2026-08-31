@@ -40,9 +40,14 @@ export default function Shop() {
     const catParam = searchParams.get('category')
     if (catParam) {
       const catId = Number(catParam)
-      if (!isNaN(catId)) setSelectedCats([catId])
+      if (!isNaN(catId)) {
+        setSelectedCats([catId])
+      } else if (categories.length > 0) {
+        const found = categories.find(c => c.name.toLowerCase().includes(catParam.toLowerCase()))
+        if (found) setSelectedCats([found.idCategory])
+      }
     }
-  }, [searchParams])
+  }, [searchParams, categories])
 
   const doSearch = useCallback(async () => {
     setLoading(true)
@@ -140,7 +145,7 @@ export default function Shop() {
         {/* ─── Sidebar Filters ─── */}
         <aside className={`shop-sidebar-modern ${mobileFilterOpen ? 'mobile-drawer-open' : ''}`}>
           <div className="sidebar-header">
-            <h3>Filtrar Archivo</h3>
+            <h3>Filtrar Catálogo</h3>
             {hasFilters && (
               <button type="button" className="btn-clear-inline" onClick={clearFilters}>
                 Limpiar todo
@@ -162,7 +167,7 @@ export default function Shop() {
               <input
                 type="text"
                 className="filter-input-text"
-                placeholder="Ej. Cuero, Levi's, 90s..."
+                placeholder="Ej. Chaqueta, Denim, 90s..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -176,7 +181,7 @@ export default function Shop() {
 
           {/* Categories Accordion */}
           <div className="filter-block">
-            <label className="filter-title">Categorías</label>
+            <label className="filter-title">Categorías Principales</label>
             <div className="filter-checkbox-list">
               {categories.map(cat => {
                 const isSelected = selectedCats.includes(cat.idCategory)
@@ -220,10 +225,10 @@ export default function Shop() {
             <label className="filter-title">Silueta / Género</label>
             <div className="genre-pill-group">
               {[
-                { val: '', label: 'Todos' },
-                { val: 'U', label: 'Unisex' },
-                { val: 'M', label: 'Hombre' },
-                { val: 'F', label: 'Mujer' },
+                { val: '', label: 'Todas' },
+                { val: 'UNISEX', label: '⚡ Unisex' },
+                { val: 'HOMBRE', label: '♂ Hombre' },
+                { val: 'MUJER', label: '♀ Mujer' },
               ].map(item => (
                 <button
                   key={item.val}

@@ -1,5 +1,5 @@
-import type { Category, CategoryFull, ProductSummary, ProductDetail, ProductCreate, Customer, Sale } from '../types/models'
-import { getStoredCategories, getStoredProducts, saveStoredCategories, saveStoredProducts } from './mockData'
+import type { Category, CategoryFull, ProductSummary, ProductDetail, ProductCreate, Customer, Sale, Auction, AuctionBid, AuctionCreate, BidCreate, SellerApplication, SellerApplicationCreate } from '../types/models'
+import { getStoredCategories, getStoredProducts, saveStoredCategories, saveStoredProducts, getStoredAuctions, saveStoredAuctions, getStoredSellerApplications, saveStoredSellerApplications } from './mockData'
 
 export const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -7,7 +7,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const stored = localStorage.getItem('lco_user')
   const token = stored ? JSON.parse(stored).token : null
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 1500)
+  const timeoutId = setTimeout(() => controller.abort(), 4000)
 
   try {
     const response = await fetch(`${API_BASE}/api${path}`, {
@@ -122,12 +122,20 @@ export const productApi = {
       return await request<ProductSummary[]>(`/products/search${qs ? '?' + qs : ''}`)
     } catch {
       let list = getStoredProducts()
+      const cats = getStoredCategories()
       if (params.q) {
         const query = params.q.toLowerCase()
-        list = list.filter(p => p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query))
+        list = list.filter(p => p.name.toLowerCase().includes(query) || (p.description && p.description.toLowerCase().includes(query)))
       }
       if (params.category && params.category.length > 0) {
-        list = list.filter(p => params.category!.includes(p.categoryId))
+        list = list.filter(p => {
+          if (params.category!.includes(p.categoryId)) return true
+          if (p.categories && p.categories.some(c => {
+            const catObj = cats.find(x => x.name.toLowerCase() === c.toLowerCase())
+            return catObj && params.category!.includes(catObj.idCategory)
+          })) return true
+          return false
+        })
       }
       if (params.minCondition !== undefined && params.minCondition > 0) {
         list = list.filter(p => p.condition >= params.minCondition!)
@@ -136,7 +144,14 @@ export const productApi = {
         list = list.filter(p => p.condition <= params.maxCondition!)
       }
       if (params.sex) {
-        list = list.filter(p => p.sex === params.sex || p.sex === 'U')
+        const s = params.sex.toUpperCase()
+        list = list.filter(p => {
+          const pSex = (p.sex || 'UNISEX').toUpperCase()
+          if (s === 'U' || s === 'UNISEX') return pSex === 'UNISEX' || pSex === 'U'
+          if (s === 'M' || s === 'HOMBRE') return pSex === 'HOMBRE' || pSex === 'M' || pSex === 'UNISEX' || pSex === 'U'
+          if (s === 'F' || s === 'MUJER') return pSex === 'MUJER' || pSex === 'F' || pSex === 'UNISEX' || pSex === 'U'
+          return pSex === s
+        })
       }
       if (params.available !== undefined) {
         list = list.filter(p => p.available === params.available)
@@ -170,10 +185,11 @@ export const productApi = {
         condition: data.condition,
         imageUrl: primaryImg,
         images: cleanImages.length > 0 ? cleanImages : [primaryImg],
+        categories: data.categories && data.categories.length > 0 ? data.categories : (cat?.name ? [cat.name] : []),
         categoryId: data.categoryId,
         categoryName: cat?.name || 'Varios',
         available: data.available,
-        sex: data.sex || 'U',
+        sex: data.sex || 'UNISEX',
       }
       const updated = [newProduct, ...prods]
       saveStoredProducts(updated)
@@ -200,6 +216,7 @@ export const productApi = {
         size: data.size || 'M',
         imageUrl: primaryImg || p.imageUrl,
         images: cleanImages.length > 0 ? cleanImages : (p.images || [p.imageUrl]),
+        categories: data.categories || p.categories,
         categoryName: cat?.name || p.categoryName,
         sex: data.sex || p.sex,
       } : p)
@@ -213,6 +230,85 @@ export const productApi = {
     } catch {
       const prods = getStoredProducts().filter(p => p.idProduct !== id)
       saveStoredProducts(prods)
+    }
+  },
+  getPending: async (): Promise<ProductSummary[]> => {
+    try {
+      return await request<ProductSummary[]>('/products/pending')
+    } catch {
+      const prods = getStoredProducts()
+      return prods.filter(p => p.status === 'PENDIENTE_REVISION')
+    }
+  },
+  getSellerSubmissions: async (sellerEmail?: string): Promise<ProductSummary[]> => {
+    try {
+      const qs = sellerEmail ? `?email=${encodeURIComponent(sellerEmail)}` : ''
+      return await request<ProductSummary[]>(`/products/seller-submissions${qs}`)
+    } catch {
+      const prods = getStoredProducts()
+      if (!sellerEmail) return []
+      return prods.filter(p => p.sellerEmail?.toLowerCase() === sellerEmail.toLowerCase())
+    }
+  },
+  submitBySeller: async (data: ProductCreate, sellerEmail?: string, sellerName?: string): Promise<ProductDetail> => {
+    const payload = {
+      ...data,
+      status: 'PENDIENTE_REVISION',
+      sellerEmail,
+      sellerName,
+    }
+    try {
+      return await request<ProductDetail>('/products/submit', { method: 'POST', body: JSON.stringify(payload) })
+    } catch {
+      const prods = getStoredProducts()
+      const cats = getStoredCategories()
+      const cat = cats.find(c => c.idCategory === data.categoryId)
+
+      const cleanImages = (data.images && data.images.length > 0)
+        ? data.images.slice(0, 5)
+        : (data.imageUrl ? [data.imageUrl] : [])
+      const primaryImg = cleanImages[0] || data.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80'
+
+      const newProduct: ProductDetail = {
+        idProduct: Date.now(),
+        name: data.name,
+        description: data.description || '',
+        price: data.price,
+        size: data.size || 'M',
+        condition: data.condition,
+        imageUrl: primaryImg,
+        images: cleanImages.length > 0 ? cleanImages : [primaryImg],
+        categoryId: data.categoryId,
+        categoryName: cat?.name || 'Varios',
+        available: data.available,
+        sex: data.sex || 'U',
+        status: 'PENDIENTE_REVISION',
+        sellerEmail,
+        sellerName,
+      }
+      const updated = [newProduct, ...prods]
+      saveStoredProducts(updated)
+      return newProduct
+    }
+  },
+  approve: async (id: number): Promise<ProductDetail> => {
+    try {
+      return await request<ProductDetail>(`/products/${id}/approve`, { method: 'POST' })
+    } catch {
+      const prods = getStoredProducts()
+      const updated = prods.map(p => p.idProduct === id ? { ...p, status: 'PUBLICADO', rejectionReason: undefined } : p)
+      saveStoredProducts(updated)
+      return updated.find(p => p.idProduct === id) as ProductDetail
+    }
+  },
+  reject: async (id: number, reason?: string): Promise<ProductDetail> => {
+    try {
+      return await request<ProductDetail>(`/products/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) })
+    } catch {
+      const prods = getStoredProducts()
+      const updated = prods.map(p => p.idProduct === id ? { ...p, status: 'RECHAZADO', rejectionReason: reason || 'Rechazado por el administrador' } : p)
+      saveStoredProducts(updated)
+      return updated.find(p => p.idProduct === id) as ProductDetail
     }
   },
 }
@@ -366,11 +462,217 @@ export const claimApi = {
 export const userApi = {
   getAllUsers: async (): Promise<import('../types/models').AppUser[]> => {
     try {
-      return await request<import('../types/models').AppUser[]>('/auth/users')
+      const res = await request<import('../types/models').AppUser[]>('/auth/users')
+      if (res && res.length > 0) return res
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem('lco_registered_users_v2')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(u => ({
+            username: u.username,
+            email: u.email,
+            displayName: u.displayName || u.username,
+            role: u.role || 'CUSTOMER',
+          }))
+        }
+      }
+    } catch {}
+
+    return [
+      { username: 'cachina', email: 'cachina@lacachinaonline.pe', displayName: 'La Cachina Admin', role: 'ADMIN' },
+      { username: 'vendedor', email: 'vendedor@lacachina.pe', displayName: 'Vendedor Vintage Oficial', role: 'SELLER' },
+    ]
+  },
+}
+
+export const auctionApi = {
+  getAll: async (): Promise<Auction[]> => {
+    try {
+      const remote = await request<Auction[]>('/auctions')
+      if (remote && Array.isArray(remote)) {
+        saveStoredAuctions(remote)
+        return remote
+      }
+      return getStoredAuctions()
     } catch {
-      return [
-        { username: 'cachina', email: 'cachina@lacachinaonline.pe', displayName: 'La Cachina Admin', role: 'ADMIN' },
-      ]
+      return getStoredAuctions()
+    }
+  },
+  getOne: async (id: number): Promise<Auction> => {
+    try {
+      return await request<Auction>(`/auctions/${id}`)
+    } catch {
+      const all = await auctionApi.getAll()
+      const found = all.find(a => a.idAuction === id)
+      if (!found) throw new Error(`Subasta #${id} no encontrada`)
+      return found
+    }
+  },
+  create: async (data: AuctionCreate): Promise<Auction> => {
+    try {
+      return await request<Auction>('/auctions', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    } catch {
+      const all = await auctionApi.getAll()
+      const newAuction: Auction = {
+        idAuction: Date.now(),
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl || data.images?.[0] || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
+        images: data.images || (data.imageUrl ? [data.imageUrl] : []),
+        startingPrice: data.startingPrice,
+        currentBid: data.startingPrice,
+        minIncrement: data.minIncrement || 10.0,
+        startTime: data.startTime || new Date().toISOString(),
+        endTime: data.endTime || new Date(Date.now() + 3 * 86400000).toISOString(),
+        status: 'ACTIVE',
+        sellerEmail: data.sellerEmail,
+        sellerName: data.sellerName,
+        bidCount: 0,
+        size: data.size || 'M',
+        condition: data.condition || 5,
+        categoryName: data.categoryName || 'Chaquetas',
+        createdAt: new Date().toISOString(),
+        bids: [],
+      }
+      const updated = [newAuction, ...all]
+      saveStoredAuctions(updated)
+      return newAuction
+    }
+  },
+  placeBid: async (id: number, bidData: BidCreate): Promise<Auction> => {
+    try {
+      return await request<Auction>(`/auctions/${id}/bid`, {
+        method: 'POST',
+        body: JSON.stringify(bidData),
+      })
+    } catch {
+      const all = await auctionApi.getAll()
+      const auction = all.find(a => a.idAuction === id)
+      if (!auction) throw new Error('Subasta no encontrada')
+      if (auction.status !== 'ACTIVE') throw new Error('Esta subasta ya finalizó')
+
+      const minRequired = auction.bidCount === 0 ? auction.startingPrice : auction.currentBid + auction.minIncrement
+      if (bidData.amount < minRequired) {
+        throw new Error(`La puja mínima requerida es de S/ ${minRequired.toFixed(2)}`)
+      }
+
+      const newBid: AuctionBid = {
+        idBid: Date.now(),
+        idAuction: id,
+        bidderEmail: bidData.bidderEmail,
+        bidderName: bidData.bidderName,
+        amount: bidData.amount,
+        bidTime: new Date().toISOString(),
+      }
+
+      auction.currentBid = bidData.amount
+      auction.highestBidderEmail = bidData.bidderEmail
+      auction.highestBidderName = bidData.bidderName
+      auction.bidCount += 1
+      auction.bids = [newBid, ...(auction.bids || [])]
+
+      const updated = all.map(a => a.idAuction === id ? auction : a)
+      saveStoredAuctions(updated)
+      return auction
     }
   },
 }
+
+export const sellerApplicationApi = {
+  getAll: async (): Promise<SellerApplication[]> => {
+    try {
+      const remote = await request<SellerApplication[]>('/seller-applications')
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        saveStoredSellerApplications(remote)
+        return remote
+      }
+      return getStoredSellerApplications()
+    } catch {
+      return getStoredSellerApplications()
+    }
+  },
+  getMyStatus: async (email: string): Promise<SellerApplication | null> => {
+    try {
+      return await request<SellerApplication>(`/seller-applications/me?email=${encodeURIComponent(email)}`)
+    } catch {
+      const all = getStoredSellerApplications()
+      return all.find(a => a.userEmail?.toLowerCase() === email.toLowerCase()) || null
+    }
+  },
+  submit: async (data: SellerApplicationCreate): Promise<SellerApplication> => {
+    try {
+      return await request<SellerApplication>('/seller-applications', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    } catch {
+      const all = getStoredSellerApplications()
+      const newApp: SellerApplication = {
+        idApplication: Date.now(),
+        userEmail: data.userEmail,
+        userName: data.userName,
+        shopName: data.shopName,
+        docNumber: data.docNumber,
+        phone: data.phone,
+        instagram: data.instagram,
+        experienceDetails: data.experienceDetails,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      }
+      const updated = [newApp, ...all]
+      saveStoredSellerApplications(updated)
+      return newApp
+    }
+  },
+  approve: async (id: number): Promise<SellerApplication> => {
+    try {
+      return await request<SellerApplication>(`/seller-applications/${id}/approve`, {
+        method: 'POST',
+      })
+    } catch {
+      const all = getStoredSellerApplications()
+      const app = all.find(a => a.idApplication === id)
+      if (!app) throw new Error('Solicitud no encontrada')
+      app.status = 'APPROVED'
+      app.updatedAt = new Date().toISOString()
+
+      // Also update stored user role if matches current user
+      const storedUser = localStorage.getItem('lco_user')
+      if (storedUser) {
+        const u = JSON.parse(storedUser)
+        if (u.email?.toLowerCase() === app.userEmail?.toLowerCase()) {
+          u.role = 'SELLER'
+          localStorage.setItem('lco_user', JSON.stringify(u))
+        }
+      }
+
+      saveStoredSellerApplications(all)
+      return app
+    }
+  },
+  reject: async (id: number, reason?: string): Promise<SellerApplication> => {
+    try {
+      return await request<SellerApplication>(`/seller-applications/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      })
+    } catch {
+      const all = getStoredSellerApplications()
+      const app = all.find(a => a.idApplication === id)
+      if (!app) throw new Error('Solicitud no encontrada')
+      app.status = 'REJECTED'
+      app.rejectionReason = reason
+      app.updatedAt = new Date().toISOString()
+      saveStoredSellerApplications(all)
+      return app
+    }
+  },
+}
+
+

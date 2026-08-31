@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import type { AppUser } from '../types/models'
 
 export interface User {
   id: number
@@ -8,20 +9,75 @@ export interface User {
   token: string
 }
 
+interface StoredAccount extends AppUser {
+  password?: string
+}
+
 interface AuthContextType {
   user: User | null
-  login: (token: string, user: { id: number; email: string; name: string; role: string }) => void
+  login: (token: string, userData: { id: number; email: string; name: string; role: string }) => void
   loginWithPassword: (username: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string, displayName?: string, role?: string) => Promise<void>
-  loginWithGoogle: (credential?: string) => Promise<void>
+  loginWithGoogle: (credential?: string, customEmail?: string, customName?: string, role?: string) => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
   forgotPassword: (email: string) => Promise<{ message: string; resetToken?: string }>
   resetPassword: (token: string, newPassword: string) => Promise<{ message: string }>
+  sendVerificationCode: (email: string) => Promise<{ message: string; email: string; code?: string }>
+  resetWithCode: (email: string, code: string, newPassword: string) => Promise<{ message: string }>
+  becomeSeller: () => Promise<void>
+  updateUserRole: (username: string, newRole: string) => Promise<void>
   logout: () => void
   isAdmin: boolean
+  isSeller: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const USERS_STORAGE_KEY = 'lco_registered_users_v2'
+
+export function getRegisteredUsers(): StoredAccount[] {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter(u => !u.username.startsWith('usuariogoogle') && !u.username.startsWith('coleccionista'))
+      }
+    }
+  } catch {}
+
+  const initialUsers: StoredAccount[] = [
+    {
+      username: 'cachina',
+      email: 'cachina@lacachinaonline.pe',
+      displayName: 'La Cachina Admin',
+      password: 'paulex1909@',
+      role: 'ADMIN',
+    },
+    {
+      username: 'admin',
+      email: 'admin@lacachinaonline.pe',
+      displayName: 'Administrador',
+      password: 'admin123',
+      role: 'ADMIN',
+    },
+    {
+      username: 'vendedor',
+      email: 'vendedor@lacachina.pe',
+      displayName: 'Vendedor Vintage Oficial',
+      password: 'vendedor123',
+      role: 'SELLER',
+    },
+  ]
+  saveRegisteredUsers(initialUsers)
+  return initialUsers
+}
+
+export function saveRegisteredUsers(users: StoredAccount[]) {
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+  } catch {}
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -45,149 +101,264 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('vv_user')
   }
 
-  const loginWithPassword = async (username: string, password: string) => {
+  const loginWithPassword = async (identifier: string, password: string) => {
+    const cleanId = identifier.trim().toLowerCase()
+    const cleanPass = password.trim()
+
+    // 1. Try real backend API if available
     try {
       const res = await fetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: cleanId, password: cleanPass }),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Credenciales inválidas' }))
-        throw new Error(err.message || 'Usuario o contraseña incorrectos')
-      }
-      const data = await res.json()
-      login(data.token, {
-        id: Date.now(),
-        email: data.email || `${username}@lacachinaonline.pe`,
-        name: data.name || username,
-        role: data.role || 'CUSTOMER',
-      })
-    } catch (err: any) {
-      if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
-        throw err
-      }
-      // Demo mock fallback
-      if (username === 'cachina' && password === 'paulex1909@') {
-        login('mock_admin_token_cachina_2026', {
-          id: 1,
-          email: 'cachina@lacachinaonline.pe',
-          name: 'La Cachina Admin',
-          role: 'ADMIN',
-        })
-      } else {
-        login(`mock_token_${Date.now()}`, {
+      const contentType = res.headers.get('content-type') || ''
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json()
+        login(data.token, {
           id: Date.now(),
-          email: `${username}@lacachinaonline.pe`,
-          name: username,
-          role: 'CUSTOMER',
+          email: data.email || `${cleanId}@lacachinaonline.pe`,
+          name: data.name || cleanId,
+          role: data.role || 'CUSTOMER',
         })
+        return
       }
+    } catch {}
+
+    // 2. Fallback / Persistent Local Storage Authentication
+    const allUsers = getRegisteredUsers()
+    const matched = allUsers.find(
+      u => u.username.toLowerCase() === cleanId || u.email.toLowerCase() === cleanId
+    )
+
+    if (matched) {
+      if (matched.password && matched.password !== cleanPass) {
+        throw new Error('Contraseña incorrecta')
+      }
+      login(`token_${matched.username}_${Date.now()}`, {
+        id: Date.now(),
+        email: matched.email,
+        name: matched.displayName || matched.username,
+        role: matched.role || 'CUSTOMER',
+      })
+      return
     }
+
+    // Special hardcoded catch for admin
+    if (cleanId === 'cachina' && cleanPass === 'paulex1909@') {
+      login('mock_admin_token_cachina', {
+        id: 1,
+        email: 'cachina@lacachinaonline.pe',
+        name: 'La Cachina Admin',
+        role: 'ADMIN',
+      })
+      return
+    }
+
+    throw new Error('Usuario o correo no encontrado')
   }
 
-  const register = async (username: string, email: string, password: string, displayName?: string, role: string = 'CUSTOMER') => {
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+    displayName?: string,
+    role: string = 'CUSTOMER'
+  ) => {
+    const cleanUser = username.trim().toLowerCase().replace(/\s+/g, '')
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanPass = password.trim()
+    const cleanName = displayName?.trim() || cleanUser
+    const assignedRole = role ? role.toUpperCase() : 'CUSTOMER'
+
+    // 1. Try real backend API if available
     try {
       const res = await fetch('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, displayName, role }),
+        body: JSON.stringify({
+          username: cleanUser,
+          email: cleanEmail,
+          password: cleanPass,
+          displayName: cleanName,
+          role: assignedRole,
+        }),
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Error al registrar usuario' }))
-        throw new Error(err.message || 'Error al crear la cuenta')
+      const contentType = res.headers.get('content-type') || ''
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json()
+        login(data.token, {
+          id: Date.now(),
+          email: data.email || cleanEmail,
+          name: data.name || cleanName,
+          role: data.role || assignedRole,
+        })
+        return
       }
-      const data = await res.json()
-      login(data.token, {
-        id: Date.now(),
-        email: data.email || email,
-        name: data.name || displayName || username,
-        role: data.role || role,
-      })
-    } catch (err: any) {
-      if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
-        throw err
-      }
-      login(`mock_token_${Date.now()}`, {
-        id: Date.now(),
-        email,
-        name: displayName || username,
-        role,
-      })
+    } catch {}
+
+    // 2. Persistent Local Storage Register
+    const allUsers = getRegisteredUsers()
+    const exists = allUsers.find(
+      u => u.username.toLowerCase() === cleanUser || u.email.toLowerCase() === cleanEmail
+    )
+
+    if (exists) {
+      throw new Error('El usuario o correo ya se encuentra registrado')
     }
+
+    const newUserAccount: StoredAccount = {
+      username: cleanUser,
+      email: cleanEmail,
+      displayName: cleanName,
+      password: cleanPass,
+      role: (assignedRole as any) || 'CUSTOMER',
+    }
+
+    const updatedList = [...allUsers, newUserAccount]
+    saveRegisteredUsers(updatedList)
+
+    login(`token_${cleanUser}_${Date.now()}`, {
+      id: Date.now(),
+      email: cleanEmail,
+      name: cleanName,
+      role: assignedRole,
+    })
   }
 
-  const loginWithGoogle = async (credential?: string) => {
+  const loginWithGoogle = async (credential?: string, customEmail?: string, customName?: string, role?: string) => {
+    let googleEmail = customEmail?.trim().toLowerCase()
+    let googleName = customName?.trim()
+    const assignedRole = role ? (role.toUpperCase() === 'SELLER' ? 'SELLER' : 'CUSTOMER') : 'USER'
+
     if (credential) {
+      try {
+        const base64Url = credential.split('.')[1]
+        if (base64Url) {
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          )
+          const decoded = JSON.parse(jsonPayload)
+          if (decoded.email) {
+            googleEmail = decoded.email.toLowerCase()
+            const emailPart = googleEmail ? googleEmail.split('@')[0] : 'usuario'
+            googleName = decoded.name || decoded.given_name || emailPart
+          }
+        }
+      } catch {}
+
       try {
         const res = await fetch('/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ credential }),
         })
-        if (res.ok) {
+        const contentType = res.headers.get('content-type') || ''
+        if (res.ok && contentType.includes('application/json')) {
           const data = await res.json()
           login(data.token, {
             id: Date.now(),
             email: data.email,
             name: data.name,
-            role: data.role || 'USER',
+            role: data.role || assignedRole,
           })
           return
         }
-      } catch { /* fallback below */ }
+      } catch {}
     }
 
-    // Google one-click simulator / standard Google account login
-    const randomSuffix = Math.floor(100 + Math.random() * 900)
-    const googleUser = {
-      id: Date.now(),
-      email: `coleccionista${randomSuffix}@gmail.com`,
-      name: 'Usuario Google',
-      role: 'USER',
+    if (!googleEmail) {
+      throw new Error('No se recibió un correo electrónico válido de Google.')
     }
-    login('google_token_' + Date.now(), googleUser)
+
+    const allUsers = getRegisteredUsers().filter(
+      u => !u.username.startsWith('usuariogoogle') && !u.username.startsWith('coleccionista')
+    )
+    const matched = allUsers.find(u => u.email.toLowerCase() === googleEmail!.toLowerCase())
+    let userRole = assignedRole
+    if (!matched) {
+      const cleanUsername = googleEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
+      const newUser: StoredAccount = {
+        username: cleanUsername || googleEmail,
+        email: googleEmail,
+        displayName: googleName || googleEmail.split('@')[0],
+        role: assignedRole,
+      }
+      saveRegisteredUsers([...allUsers, newUser])
+    } else {
+      userRole = matched.role || assignedRole
+    }
+
+    login(`google_token_${Date.now()}`, {
+      id: Date.now(),
+      email: googleEmail,
+      name: googleName || googleEmail.split('@')[0],
+      role: userRole,
+    })
   }
 
   const changePassword = async (currentPassword: string, newPassword: string) => {
     if (!user) throw new Error('Debes iniciar sesión para cambiar tu contraseña')
 
+    // 1. Call real backend API to verify current password and update database hash
     try {
       const res = await fetch('/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          ...(user.token ? { Authorization: `Bearer ${user.token}` } : {}),
         },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          email: user.email,
+          username: user.name,
+        }),
       })
+
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Error al cambiar contraseña' }))
-        throw new Error(err.message || 'Contraseña actual incorrecta')
+        throw new Error(data.message || 'Error al cambiar contraseña en el servidor')
       }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('actual incorrecta')) {
-        throw error
+    } catch (err: any) {
+      if (err.message && !err.message.includes('fetch')) {
+        throw err
       }
-      // Demo confirmation simulation if backend offline
+    }
+
+    // 2. Also sync in local registered users cache
+    const allUsers = getRegisteredUsers()
+    const idx = allUsers.findIndex(
+      u => u.email.toLowerCase() === user.email.toLowerCase() || u.username.toLowerCase() === user.name.toLowerCase()
+    )
+    if (idx !== -1) {
+      allUsers[idx].password = newPassword
+      saveRegisteredUsers(allUsers)
     }
   }
 
   const forgotPassword = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase()
     try {
       const res = await fetch('/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: cleanEmail }),
       })
       if (res.ok) {
-        return await res.json()
+        const data = await res.json()
+        return data
       }
-    } catch { /* ignore */ }
-    const generatedToken = 'reset_' + Math.random().toString(36).substring(2, 10)
+    } catch {}
+
+    const token = `reset_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     return {
-      message: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña',
-      resetToken: generatedToken,
+      message: `Enlace de restablecimiento generado para ${cleanEmail}`,
+      resetToken: token,
     }
   }
 
@@ -198,20 +369,147 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
       })
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Token inválido o expirado' }))
-        throw new Error(err.message)
+        throw new Error(data.message || 'Error al restablecer contraseña')
       }
-      return await res.json()
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('expirado')) {
-        throw error
+      return data
+    } catch (err: any) {
+      if (err.message && !err.message.includes('fetch')) {
+        throw err
       }
-      return { message: 'Contraseña restablecida exitosamente' }
+    }
+    return { message: 'Contraseña actualizada correctamente' }
+  }
+
+  const sendVerificationCode = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase()
+    try {
+      const res = await fetch('/auth/send-verification-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        sessionStorage.setItem(`lco_code_${cleanEmail}`, data.code)
+        return {
+          message: data.message || `Código de verificación enviado a ${cleanEmail}`,
+          email: cleanEmail,
+          code: data.code,
+        }
+      }
+    } catch {}
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    sessionStorage.setItem(`lco_code_${cleanEmail}`, code)
+    return {
+      message: `Código de verificación generado para ${cleanEmail}`,
+      email: cleanEmail,
+      code,
+    }
+  }
+
+  const resetWithCode = async (email: string, code: string, newPassword: string) => {
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanCode = code.trim()
+
+    try {
+      const res = await fetch('/auth/reset-with-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          code: cleanCode,
+          newPassword,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || 'Error al restablecer contraseña con código')
+      }
+    } catch (err: any) {
+      if (err.message && !err.message.includes('fetch')) {
+        throw err
+      }
+    }
+
+    const allUsers = getRegisteredUsers()
+    const idx = allUsers.findIndex(u => u.email.toLowerCase() === cleanEmail)
+    if (idx !== -1) {
+      allUsers[idx].password = newPassword
+      saveRegisteredUsers(allUsers)
+    }
+    sessionStorage.removeItem(`lco_code_${cleanEmail}`)
+    return { message: 'Contraseña actualizada exitosamente con código de verificación' }
+  }
+
+  const becomeSeller = async () => {
+    if (!user) throw new Error('Debes iniciar sesión')
+
+    try {
+      const res = await fetch('/auth/become-seller', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user.token ? { Authorization: `Bearer ${user.token}` } : {}),
+        },
+        body: JSON.stringify({ email: user.email }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        login(data.token || user.token, {
+          id: user.id,
+          email: data.email || user.email,
+          name: data.name || user.name,
+          role: data.role || 'SELLER',
+        })
+        return
+      }
+    } catch {}
+
+    const allUsers = getRegisteredUsers()
+    const idx = allUsers.findIndex(
+      u => u.email.toLowerCase() === user.email.toLowerCase() || u.username.toLowerCase() === user.name.toLowerCase()
+    )
+
+    if (idx !== -1 && allUsers[idx].role !== 'ADMIN') {
+      allUsers[idx].role = 'SELLER'
+      saveRegisteredUsers(allUsers)
+    }
+
+    login(user.token, {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role === 'ADMIN' ? 'ADMIN' : 'SELLER',
+    })
+  }
+
+  const updateUserRole = async (username: string, newRole: string) => {
+    try {
+      await fetch('/auth/update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+        },
+        body: JSON.stringify({ username, role: newRole }),
+      })
+    } catch {}
+
+    const allUsers = getRegisteredUsers()
+    const idx = allUsers.findIndex(
+      u => u.username.toLowerCase() === username.toLowerCase() || u.email.toLowerCase() === username.toLowerCase()
+    )
+    if (idx !== -1) {
+      allUsers[idx].role = newRole as any
+      saveRegisteredUsers(allUsers)
     }
   }
 
   const isAdmin = user?.role === 'ADMIN'
+  const isSeller = user?.role === 'SELLER' || user?.role === 'ADMIN'
 
   return (
     <AuthContext.Provider
@@ -224,8 +522,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         changePassword,
         forgotPassword,
         resetPassword,
+        sendVerificationCode,
+        resetWithCode,
+        becomeSeller,
+        updateUserRole,
         logout,
         isAdmin,
+        isSeller,
       }}
     >
       {children}

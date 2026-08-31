@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from './CartContext'
 import { useAuth } from './AuthContext'
 import ChangePasswordModal from './ChangePasswordModal'
+import BrandLogoIcon from './BrandLogoIcon'
 
 export default function Header() {
   const { totalCount } = useCart()
@@ -48,15 +49,17 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Abrir menú"
             >
-              <span className="bar" />
-              <span className="bar" />
-              <span className="bar" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
             </button>
 
             {/* Left: Brand Monogram & Name */}
             <Link to="/" className="brand-logo-modern" onClick={() => setMobileMenuOpen(false)}>
               <div className="brand-monogram">
-                <span className="monogram-text">LC</span>
+                <BrandLogoIcon size={38} />
               </div>
               <div className="brand-titles">
                 <span className="brand-name">LA CACHINA</span>
@@ -70,6 +73,12 @@ export default function Header() {
               <Link to="/tienda" className="nav-item">
                 <span>El Mercado</span>
                 <span className="nav-badge-drops">🔥 Drops</span>
+              </Link>
+              <Link to="/subastas" className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>🔨 Subastas</span>
+                <span className="nav-badge-drops" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                  EN VIVO
+                </span>
               </Link>
             </nav>
 
@@ -111,17 +120,14 @@ export default function Header() {
                       ⚙️ Panel
                     </Link>
                   )}
-                  <span className="user-welcome desktop-only">
-                    Hola, <strong>{user.name.split(' ')[0]}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPasswordModalOpen(true)}
-                    className="action-btn-key desktop-only"
-                    title="Cambiar contraseña"
-                  >
-                    🔑 Clave
-                  </button>
+                  <Link to="/perfil" className="user-profile-nav-link" title="Mi Perfil & Compras">
+                    <span className="user-avatar-tiny">
+                      {user.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
+                    </span>
+                    <span className="user-welcome desktop-only">
+                      Hola, <strong>{user.name.split(' ')[0]}</strong>
+                    </span>
+                  </Link>
                   <button type="button" onClick={logout} className="action-btn-logout" title="Cerrar sesión">
                     Salir
                   </button>
@@ -160,7 +166,7 @@ export default function Header() {
               <div className="drawer-header">
                 <div className="brand-logo-modern">
                   <div className="brand-monogram small">
-                    <span className="monogram-text">LC</span>
+                    <BrandLogoIcon size={30} />
                   </div>
                   <span className="brand-name">LA CACHINA ONLINE</span>
                 </div>
@@ -168,19 +174,30 @@ export default function Header() {
               </div>
 
               <nav className="mobile-drawer-nav">
+                <div className="drawer-section-label">EXPLORAR</div>
                 <Link to="/" onClick={() => setMobileMenuOpen(false)}>🏠 Inicio</Link>
-                <Link to="/tienda" onClick={() => setMobileMenuOpen(false)}>🛍️ Ver Todo el Mercado</Link>
-                <Link to="/tienda?category=1" onClick={() => setMobileMenuOpen(false)}>🧥 Casacas & Cortavientos</Link>
-                <Link to="/tienda?category=2" onClick={() => setMobileMenuOpen(false)}>👖 Jeans & Levi's 501</Link>
-                <Link to="/tienda?category=3" onClick={() => setMobileMenuOpen(false)}>👕 Polos Gráficos & Band Tees</Link>
-                <Link to="/tienda?category=4" onClick={() => setMobileMenuOpen(false)}>👔 Camisas & Sedas</Link>
-                <Link to="/tienda?category=5" onClick={() => setMobileMenuOpen(false)}>👟 Tabas & Zapatillas</Link>
-                <Link to="/tienda?category=6" onClick={() => setMobileMenuOpen(false)}>🎒 Huachaferías & Accesorios</Link>
+                <Link to="/tienda" onClick={() => setMobileMenuOpen(false)}>🛍️ Ver Todo el Mercado (Drops)</Link>
+                <Link to="/subastas" onClick={() => setMobileMenuOpen(false)}>
+                  🔨 Subastas Vintage <span className="cart-badge-inline" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>EN VIVO</span>
+                </Link>
+                <Link to="/carrito" onClick={() => setMobileMenuOpen(false)}>
+                  🛒 Mi Carrito {totalCount > 0 && <span className="cart-badge-inline">({totalCount})</span>}
+                </Link>
+
                 <div className="drawer-divider" />
+                <div className="drawer-section-label">CATEGORÍAS PRINCIPALES</div>
+                <Link to="/tienda?category=Chaquetas" onClick={() => setMobileMenuOpen(false)}>🧥 Chaquetas</Link>
+                <Link to="/tienda?category=Jeans" onClick={() => setMobileMenuOpen(false)}>👖 Jeans</Link>
+                <Link to="/tienda?category=Polos" onClick={() => setMobileMenuOpen(false)}>👕 Polos</Link>
+                <Link to="/tienda?category=Camisas" onClick={() => setMobileMenuOpen(false)}>👔 Camisas</Link>
+
+                <div className="drawer-divider" />
+                <div className="drawer-section-label">MI CUENTA & ACCIONES</div>
                 {user ? (
                   <>
+                    <Link to="/perfil" onClick={() => setMobileMenuOpen(false)}>👤 Mi Perfil & Mis Compras</Link>
                     {user.role === 'ADMIN' && (
-                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>⚙️ Panel Administrador</Link>
+                      <Link to="/admin" className="drawer-admin-link" onClick={() => setMobileMenuOpen(false)}>⚙️ Panel Administrador</Link>
                     )}
                     <button
                       type="button"
@@ -190,14 +207,25 @@ export default function Header() {
                       🔑 Cambiar Contraseña
                     </button>
                     <button type="button" className="mobile-logout-btn" onClick={() => { logout(); setMobileMenuOpen(false); }}>
-                      Cerrar Sesión ({user.name})
+                      🚪 Cerrar Sesión ({user.name ? user.name.split(' ')[0] : 'Usuario'})
                     </button>
                   </>
                 ) : (
-                  <Link to="/login" className="drawer-auth-btn" onClick={() => setMobileMenuOpen(false)}>
-                    Ingresar a mi cuenta
-                  </Link>
+                  <div className="drawer-auth-actions">
+                    <Link to="/login" className="btn-primary-luxury full-width" onClick={() => setMobileMenuOpen(false)}>
+                      <span>Iniciar Sesión</span>
+                      <span className="icon">→</span>
+                    </Link>
+                    <Link to="/register" className="drawer-register-link" onClick={() => setMobileMenuOpen(false)}>
+                      ¿Nuevo aquí? <strong>Crear Cuenta</strong>
+                    </Link>
+                  </div>
                 )}
+
+                <div className="drawer-divider" />
+                <div className="drawer-section-label">LEGAL & TRANSPARENCIA</div>
+                <Link to="/libro-de-reclamaciones" onClick={() => setMobileMenuOpen(false)}>📖 Libro de Reclamaciones</Link>
+                <Link to="/terminos-y-politicas" onClick={() => setMobileMenuOpen(false)}>📜 Términos, Políticas & Envíos</Link>
               </nav>
             </div>
           </div>

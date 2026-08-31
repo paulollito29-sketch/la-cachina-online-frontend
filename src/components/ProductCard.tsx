@@ -4,7 +4,14 @@ import { useCart } from './CartContext'
 import { useToast } from './ToastContext'
 import type { ProductSummary } from '../types/models'
 
-const sexLabel: Record<string, string> = { M: 'Hombre', F: 'Mujer', U: 'Unisex' }
+const sexLabel: Record<string, string> = {
+  M: 'Hombre',
+  HOMBRE: 'Hombre',
+  F: 'Mujer',
+  MUJER: 'Mujer',
+  U: 'Unisex',
+  UNISEX: 'Unisex',
+}
 
 const conditionText: Record<number, string> = {
   5: '5/5 Impecable',

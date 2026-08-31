@@ -17,10 +17,15 @@ export interface ProductSummary {
   condition: number
   imageUrl: string
   images?: string[]
+  categories?: string[]
   categoryId: number
   categoryName: string
   available: boolean
   sex: string
+  status?: 'PUBLICADO' | 'PENDIENTE_REVISION' | 'RECHAZADO' | string
+  sellerEmail?: string
+  sellerName?: string
+  rejectionReason?: string
 }
 
 export interface ProductDetail {
@@ -32,10 +37,15 @@ export interface ProductDetail {
   condition: number
   imageUrl: string
   images?: string[]
+  categories?: string[]
   categoryId: number
   categoryName: string
   available: boolean
   sex: string
+  status?: 'PUBLICADO' | 'PENDIENTE_REVISION' | 'RECHAZADO' | string
+  sellerEmail?: string
+  sellerName?: string
+  rejectionReason?: string
 }
 
 export interface ProductCreate {
@@ -46,12 +56,18 @@ export interface ProductCreate {
   condition: number
   imageUrl?: string
   images?: string[]
+  categories?: string[]
   categoryId: number
   available: boolean
   sex?: string
+  status?: string
+  sellerEmail?: string
+  sellerName?: string
 }
 
-export interface ProductUpdate extends ProductCreate {}
+export interface ProductUpdate extends ProductCreate {
+  rejectionReason?: string
+}
 
 export interface Customer {
   idCustomer: number
@@ -144,4 +160,86 @@ export interface AppUser {
   displayName?: string
   role: 'ADMIN' | 'CUSTOMER' | 'SELLER' | 'USER'
 }
+
+export interface AuctionBid {
+  idBid: number
+  idAuction: number
+  bidderEmail: string
+  bidderName: string
+  amount: number
+  bidTime: string
+}
+
+export interface Auction {
+  idAuction: number
+  title: string
+  description?: string
+  imageUrl: string
+  images?: string[]
+  startingPrice: number
+  currentBid: number
+  minIncrement: number
+  startTime: string
+  endTime: string
+  status: 'ACTIVE' | 'FINISHED' | 'CANCELLED' | string
+  sellerEmail?: string
+  sellerName?: string
+  highestBidderEmail?: string
+  highestBidderName?: string
+  bidCount: number
+  size?: string
+  condition: number
+  categoryName?: string
+  createdAt?: string
+  bids?: AuctionBid[]
+}
+
+export interface AuctionCreate {
+  title: string
+  description?: string
+  imageUrl?: string
+  images?: string[]
+  startingPrice: number
+  minIncrement?: number
+  startTime?: string
+  endTime?: string
+  sellerEmail?: string
+  sellerName?: string
+  size?: string
+  condition?: number
+  categoryName?: string
+}
+
+export interface BidCreate {
+  bidderEmail: string
+  bidderName: string
+  amount: number
+}
+
+export interface SellerApplication {
+  idApplication: number
+  userEmail: string
+  userName?: string
+  shopName: string
+  docNumber?: string
+  phone?: string
+  instagram?: string
+  experienceDetails?: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | string
+  rejectionReason?: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface SellerApplicationCreate {
+  userEmail: string
+  userName?: string
+  shopName: string
+  docNumber?: string
+  phone?: string
+  instagram?: string
+  experienceDetails?: string
+}
+
+
 

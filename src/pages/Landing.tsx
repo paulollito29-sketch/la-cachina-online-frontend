@@ -16,36 +16,42 @@ export default function Landing() {
       .finally(() => setLoading(false))
   }, [])
 
-  const displayedDrops = activeDropCategory
-    ? featuredProducts.filter(p => p.categoryId === activeDropCategory)
-    : featuredProducts.slice(0, 8)
-
   const categoriesPreview = [
     {
       id: 1,
-      title: 'Casacas & Cortavientos',
-      tag: 'Cuero, Polar & Bombers 90s',
+      title: 'Chaquetas',
+      tag: 'Chaquetas, Bombers & Cortavientos',
       image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=80',
     },
     {
       id: 2,
-      title: 'Jeans & Levi\'s 501',
-      tag: 'Denim Pesado & Cortes Baggy',
+      title: 'Jeans',
+      tag: 'Denim Vintage, Levi\'s 501 & Baggy',
       image: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=700&q=80',
     },
     {
       id: 3,
-      title: 'Polos Gráficos & Band Tees',
-      tag: 'Rock, Hip Hop 90s & Skate',
+      title: 'Polos',
+      tag: 'Polos Gráficos & Band Tees 90s',
       image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80',
     },
     {
       id: 4,
-      title: 'Camisas & Sedas Retro',
-      tag: 'Sedas Puras, Flores & Franela',
+      title: 'Camisas',
+      tag: 'Camisas de Seda, Franela & Estampadas',
       image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=700&q=80',
     },
   ]
+
+  const displayedDrops = activeDropCategory
+    ? featuredProducts.filter(p => {
+        if (activeDropCategory === 1) return p.categoryId === 1 || p.categoryName.toLowerCase().includes('chaqueta') || p.categoryName.toLowerCase().includes('casaca') || p.categories?.some(c => c.toLowerCase().includes('chaqueta'))
+        if (activeDropCategory === 2) return p.categoryId === 2 || p.categoryName.toLowerCase().includes('jean') || p.categories?.some(c => c.toLowerCase().includes('jean'))
+        if (activeDropCategory === 3) return p.categoryId === 3 || p.categoryName.toLowerCase().includes('polo') || p.categories?.some(c => c.toLowerCase().includes('polo'))
+        if (activeDropCategory === 4) return p.categoryId === 4 || p.categoryName.toLowerCase().includes('camisa') || p.categories?.some(c => c.toLowerCase().includes('camisa'))
+        return p.categoryId === activeDropCategory
+      })
+    : featuredProducts.slice(0, 8)
 
   return (
     <div className="landing-page-modern">
@@ -97,7 +103,7 @@ export default function Landing() {
         <div className="section-header-modern">
           <div>
             <span className="section-eyebrow">✦ ELIGE TU ESTILO</span>
-            <h2 className="section-title-modern">Colecciones de Archivo</h2>
+            <h2 className="section-title-modern">Categorías Principales</h2>
           </div>
           <Link to="/tienda" className="view-all-link desktop-only">
             Ver todas las categorías →
@@ -108,7 +114,7 @@ export default function Landing() {
           {categoriesPreview.map(cat => (
             <Link
               key={cat.id}
-              to={`/tienda?category=${cat.id}`}
+              to={`/tienda?category=${encodeURIComponent(cat.title)}`}
               className="category-card-modern"
               style={{ backgroundImage: `url(${cat.image})` }}
             >
@@ -145,21 +151,28 @@ export default function Landing() {
               className={`drop-tab-btn ${activeDropCategory === 1 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(1)}
             >
-              Casacas
+              Chaquetas
             </button>
             <button
               type="button"
               className={`drop-tab-btn ${activeDropCategory === 2 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(2)}
             >
-              Jeans 501
+              Jeans
             </button>
             <button
               type="button"
               className={`drop-tab-btn ${activeDropCategory === 3 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(3)}
             >
-              Band Tees
+              Polos
+            </button>
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === 4 ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(4)}
+            >
+              Camisas
             </button>
           </div>
         </div>

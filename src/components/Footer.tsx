@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import BrandLogoIcon from './BrandLogoIcon'
 
 export default function Footer() {
   const [email, setEmail] = useState('')
@@ -54,7 +55,7 @@ export default function Footer() {
           <div className="footer-col brand-col">
             <div className="footer-brand-header">
               <div className="brand-monogram small">
-                <span className="monogram-text">LC</span>
+                <BrandLogoIcon size={32} />
               </div>
               <span className="footer-brand-name">LA CACHINA ONLINE</span>
             </div>

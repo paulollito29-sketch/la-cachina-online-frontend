@@ -14,6 +14,15 @@ const conditionDescriptions: Record<number, { title: string; desc: string }> = {
   1: { title: 'Para Colección / Rework', desc: 'Prenda con marcado desgaste de archivo histórico.' },
 }
 
+const sexLabel: Record<string, string> = {
+  M: 'Hombre',
+  HOMBRE: 'Hombre',
+  F: 'Mujer',
+  MUJER: 'Mujer',
+  U: 'Unisex',
+  UNISEX: 'Unisex',
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -212,7 +221,18 @@ export default function ProductDetailPage() {
         {/* ─── Right: Product Spec & Action Area ─── */}
         <div className="product-info-section">
           <div className="product-header-info">
-            <span className="category-tag-luxury">{product.categoryName}</span>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+              {(product as any).categories && (product as any).categories.length > 0 ? (
+                (product as any).categories.map((catName: string, cIdx: number) => (
+                  <span key={cIdx} className="category-tag-luxury">{catName}</span>
+                ))
+              ) : (
+                <span className="category-tag-luxury">{product.categoryName}</span>
+              )}
+              <span className="category-tag-luxury" style={{ background: 'rgba(210, 248, 11, 0.15)', color: 'var(--brand-volt)' }}>
+                {sexLabel[product.sex] || product.sex}
+              </span>
+            </div>
             <h1 className="detail-product-title">{product.name}</h1>
 
             <div className="detail-price-box">

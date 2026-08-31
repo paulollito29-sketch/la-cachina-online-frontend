@@ -1,11 +1,13 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useToast } from '../components/ToastContext'
-import { categoryApi, productApi, customerApi, saleApi, claimApi, userApi } from '../services/api'
-import type { Category, ProductSummary, ProductCreate, ClaimResponse, AppUser } from '../types/models'
+import { categoryApi, productApi, customerApi, saleApi, claimApi, userApi, sellerApplicationApi } from '../services/api'
+import type { Category, ProductSummary, ProductCreate, ClaimResponse, AppUser, SellerApplication } from '../types/models'
+import ImageGalleryUploader from '../components/ImageGalleryUploader'
+import CategorySearchSelector from '../components/CategorySearchSelector'
 
-type Tab = 'dashboard' | 'products' | 'categories' | 'claims' | 'users'
+type Tab = 'dashboard' | 'pending' | 'seller-applications' | 'products' | 'categories' | 'claims' | 'users'
 
 const emptyProduct: ProductCreate = {
   name: '', description: '', price: 0, size: 'M', condition: 4,
@@ -18,15 +20,33 @@ interface DashboardStats {
   sales: number
   customers: number
   revenue: number
+  pending: number
+  sellerApps: number
 }
 
 export default function Admin() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const [tab, setTab] = useState<Tab>('pending')
+  const [pendingCount, setPendingCount] = useState(0)
+  const [pendingAppsCount, setPendingAppsCount] = useState(0)
+
+  const refreshCounts = () => {
+    productApi.getPending()
+      .then(res => setPendingCount(res.length))
+      .catch(() => setPendingCount(0))
+
+    sellerApplicationApi.getAll()
+      .then(apps => setPendingAppsCount(apps.filter(a => a.status === 'PENDING').length))
+      .catch(() => setPendingAppsCount(0))
+  }
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') navigate('/')
+    if (!user || user.role !== 'ADMIN') {
+      navigate('/')
+      return
+    }
+    refreshCounts()
   }, [user, navigate])
 
   if (!user || user.role !== 'ADMIN') return null
@@ -40,11 +60,17 @@ export default function Admin() {
           </div>
           <div>
             <h1>Panel de Administración</h1>
-            <p>Control de inventario, archivo de piezas, Libro de Reclamaciones y métricas</p>
+            <p>Control de inventario, aprobación de prendas, solicitudes de vendedores y roles</p>
           </div>
         </div>
 
         <nav className="admin-nav-tabs">
+          <button className={`admin-tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>
+            ⏳ Prendas por Aprobar {pendingCount > 0 && <span className="tab-badge-alert">{pendingCount}</span>}
+          </button>
+          <button className={`admin-tab-btn ${tab === 'seller-applications' ? 'active' : ''}`} onClick={() => setTab('seller-applications')}>
+            👔 Solicitudes Vendedores {pendingAppsCount > 0 && <span className="tab-badge-alert">{pendingAppsCount}</span>}
+          </button>
           <button className={`admin-tab-btn ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
             📊 Dashboard
           </button>
@@ -55,7 +81,7 @@ export default function Admin() {
             📂 Categorías
           </button>
           <button className={`admin-tab-btn ${tab === 'claims' ? 'active' : ''}`} onClick={() => setTab('claims')}>
-            📖 Reclamaciones INDECOPI
+            📖 Reclamaciones
           </button>
           <button className={`admin-tab-btn ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>
             👥 Usuarios & Roles
@@ -64,6 +90,8 @@ export default function Admin() {
       </div>
 
       <div className="admin-tab-content">
+        {tab === 'pending' && <AdminPendingProducts onUpdate={refreshCounts} />}
+        {tab === 'seller-applications' && <AdminSellerApplications onUpdate={refreshCounts} />}
         {tab === 'dashboard' && <AdminDashboard />}
         {tab === 'products' && <AdminProducts />}
         {tab === 'categories' && <AdminCategories />}
@@ -75,7 +103,7 @@ export default function Admin() {
 }
 
 function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({ products: 0, categories: 0, sales: 0, customers: 0, revenue: 0 })
+  const [stats, setStats] = useState<DashboardStats>({ products: 0, categories: 0, sales: 0, customers: 0, revenue: 0, pending: 0, sellerApps: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -84,8 +112,10 @@ function AdminDashboard() {
       categoryApi.getAll(),
       saleApi.getAll(),
       customerApi.getAll(),
+      productApi.getPending(),
+      sellerApplicationApi.getAll(),
     ])
-      .then(([prods, cats, sales, customers]) => {
+      .then(([prods, cats, sales, customers, pending, apps]) => {
         const rev = sales.reduce((acc, s) => acc + (s.total || s.subTotal || 0), 0)
         setStats({
           products: prods.length,
@@ -93,6 +123,8 @@ function AdminDashboard() {
           sales: sales.length,
           customers: customers.length,
           revenue: rev,
+          pending: pending.length,
+          sellerApps: apps.filter(a => a.status === 'PENDING').length,
         })
       })
       .finally(() => setLoading(false))
@@ -101,7 +133,8 @@ function AdminDashboard() {
   if (loading) return <div className="admin-loading">Cargando métricas del sistema...</div>
 
   const metricCards = [
-    { title: 'Prendas en Archivo', value: stats.products, icon: '👕', badge: 'Catálogo activo' },
+    { title: 'Prendas Publicadas', value: stats.products, icon: '👕', badge: 'Catálogo activo' },
+    { title: 'Pendientes Revisión', value: stats.pending, icon: '⏳', badge: `${stats.pending} por aprobar` },
     { title: 'Categorías Activas', value: stats.categories, icon: '📂', badge: `${stats.categories} colecciones` },
     { title: 'Ventas Registradas', value: stats.sales, icon: '🧾', badge: '100% verificado' },
     { title: 'Ingresos Totales', value: `S/ ${stats.revenue.toFixed(2)}`, icon: '💰', badge: 'Moda circular' },
@@ -137,11 +170,9 @@ function AdminProducts() {
   const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState<ProductCreate>(emptyProduct)
   const [imageList, setImageList] = useState<string[]>([])
-  const [inputUrl, setInputUrl] = useState('')
   const [editing, setEditing] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const { showToast } = useToast()
 
   const load = () => {
@@ -162,67 +193,6 @@ function AdminProducts() {
       images: limited,
       imageUrl: limited[0] || '',
     }))
-  }
-
-  // Handle local file selection
-  const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const availableSlots = 5 - imageList.length
-    if (availableSlots <= 0) {
-      showToast('Límite alcanzado', 'Solo puedes añadir un máximo de 5 imágenes por prenda.', 'warning')
-      return
-    }
-
-    const filesToRead = Array.from(files).slice(0, availableSlots)
-    const readPromises = filesToRead.map(file => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          resolve(event.target?.result as string)
-        }
-        reader.readAsDataURL(file)
-      })
-    })
-
-    Promise.all(readPromises).then(base64Array => {
-      const combined = [...imageList, ...base64Array].slice(0, 5)
-      updateImages(combined)
-      showToast('Imágenes añadidas', `${base64Array.length} foto(s) cargadas localmente.`, 'success')
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    })
-  }
-
-  // Handle URL Add
-  const handleAddUrl = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    if (!inputUrl.trim()) return
-
-    if (imageList.length >= 5) {
-      showToast('Límite de imágenes', 'Máximo 5 imágenes por producto.', 'warning')
-      return
-    }
-
-    const trimmed = inputUrl.trim()
-    const updated = [...imageList, trimmed].slice(0, 5)
-    updateImages(updated)
-    setInputUrl('')
-    showToast('Imagen añadida', 'URL registrada correctamente.', 'success')
-  }
-
-  const handleRemoveImage = (index: number) => {
-    const updated = imageList.filter((_, idx) => idx !== index)
-    updateImages(updated)
-  }
-
-  const handleSetCover = (index: number) => {
-    if (index === 0) return
-    const selected = imageList[index]
-    const rest = imageList.filter((_, idx) => idx !== index)
-    const reordered = [selected, ...rest]
-    updateImages(reordered)
-    showToast('Portada actualizada', 'La imagen seleccionada ahora es la foto principal.', 'info')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -249,7 +219,6 @@ function AdminProducts() {
       }
       setForm(emptyProduct)
       setImageList([])
-      setInputUrl('')
       setEditing(null)
       load()
     } catch (err) {
@@ -323,17 +292,23 @@ function AdminProducts() {
             />
           </div>
 
-          <div className="form-group-modern">
-            <label>Categoría</label>
-            <select
-              value={form.categoryId}
-              onChange={e => setForm(p => ({ ...p, categoryId: Number(e.target.value) }))}
+          <div className="form-group-modern" style={{ gridColumn: 'span 2' }}>
+            <CategorySearchSelector
+              categories={categories}
+              selectedCategories={form.categories && form.categories.length > 0
+                ? form.categories
+                : [categories.find(x => x.idCategory === form.categoryId)?.name || 'Chaquetas']}
+              onChange={(nextCats) => {
+                const primaryCat = categories.find(x => x.name === nextCats[0])
+                setForm(p => ({
+                  ...p,
+                  categories: nextCats,
+                  categoryId: primaryCat ? primaryCat.idCategory : p.categoryId,
+                }))
+              }}
+              label="Buscador de Categorías Asociadas (puedes seleccionar múltiples)"
               required
-            >
-              {categories.map(c => (
-                <option key={c.idCategory} value={c.idCategory}>{c.name}</option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="form-group-modern">
@@ -371,106 +346,24 @@ function AdminProducts() {
           </div>
 
           <div className="form-group-modern">
-            <label>Género / Silueta</label>
+            <label>Silueta / Género</label>
             <select
-              value={form.sex || 'U'}
+              value={form.sex || 'UNISEX'}
               onChange={e => setForm(p => ({ ...p, sex: e.target.value }))}
             >
-              <option value="U">Unisex</option>
-              <option value="M">Hombre</option>
-              <option value="F">Mujer</option>
+              <option value="UNISEX">⚡ Unisex (Para todos)</option>
+              <option value="HOMBRE">♂ Hombre (Corte masculino)</option>
+              <option value="MUJER">♀ Mujer (Corte femenino)</option>
             </select>
           </div>
         </div>
 
-        {/* ─── Multi-Image Uploader (Max 5) ─── */}
-        <div className="image-manager-block">
-          <div className="image-manager-header">
-            <label className="image-manager-label">
-              📸 Galería de Imágenes <span>(Máximo 5 fotos)</span>
-            </label>
-            <span className={`image-count-indicator ${imageList.length >= 5 ? 'max-reached' : ''}`}>
-              {imageList.length} / 5 imágenes
-            </span>
-          </div>
-
-          {/* Option 1: File Upload */}
-          <div className="image-upload-methods">
-            <div className="file-upload-dropzone">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                id="file-upload-input"
-                className="hidden-file-input"
-                onChange={handleFilesSelect}
-                disabled={imageList.length >= 5}
-              />
-              <label htmlFor="file-upload-input" className={`dropzone-label ${imageList.length >= 5 ? 'disabled' : ''}`}>
-                <span className="dropzone-icon">📁</span>
-                <span className="dropzone-text">
-                  <strong>Subir fotos locales</strong> o arrastra aquí (JPG, PNG, WebP)
-                </span>
-                <span className="dropzone-hint">Puedes seleccionar múltiples archivos a la vez</span>
-              </label>
-            </div>
-
-            {/* Option 2: Add by URL */}
-            <div className="url-add-bar">
-              <input
-                type="url"
-                placeholder="O pega una URL de imagen (https://...)"
-                value={inputUrl}
-                onChange={e => setInputUrl(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddUrl(e) }}
-                disabled={imageList.length >= 5}
-              />
-              <button
-                type="button"
-                className="btn-add-url"
-                onClick={handleAddUrl}
-                disabled={!inputUrl.trim() || imageList.length >= 5}
-              >
-                + Añadir URL
-              </button>
-            </div>
-          </div>
-
-          {/* Image Previews Grid */}
-          {imageList.length > 0 && (
-            <div className="image-previews-strip">
-              {imageList.map((img, idx) => (
-                <div key={idx} className={`preview-item-card ${idx === 0 ? 'is-cover' : ''}`}>
-                  <img src={img} alt={`Prenda foto ${idx + 1}`} />
-                  <div className="preview-item-badge">
-                    {idx === 0 ? '★ Portada' : `#${idx + 1}`}
-                  </div>
-                  <div className="preview-item-actions">
-                    {idx !== 0 && (
-                      <button
-                        type="button"
-                        className="btn-action-cover"
-                        onClick={() => handleSetCover(idx)}
-                        title="Hacer foto principal"
-                      >
-                        ★
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-action-delete"
-                      onClick={() => handleRemoveImage(idx)}
-                      title="Eliminar foto"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ─── Multi-Image Uploader with Auto-Compression (Max 5) ─── */}
+        <ImageGalleryUploader
+          images={imageList}
+          onChange={updateImages}
+          maxImages={5}
+        />
 
         <div className="form-group-modern">
           <label>Descripción & Detalles de la pieza</label>
@@ -929,24 +822,212 @@ function AdminClaims() {
   )
 }
 
+function AdminPendingProducts({ onUpdate }: { onUpdate?: () => void }) {
+  const [pending, setPending] = useState<ProductSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [rejectingProduct, setRejectingProduct] = useState<ProductSummary | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const { showToast } = useToast()
+
+  const loadPending = () => {
+    setLoading(true)
+    productApi.getPending()
+      .then(res => setPending(res))
+      .catch(() => setPending([]))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadPending()
+  }, [])
+
+  const handleApprove = async (prod: ProductSummary) => {
+    setProcessing(true)
+    try {
+      await productApi.approve(prod.idProduct)
+      showToast('¡Prenda aprobada!', `"${prod.name}" ya está publicada y visible en la tienda para todos los clientes.`, 'success')
+      loadPending()
+      if (onUpdate) onUpdate()
+    } catch (err: any) {
+      showToast('Error al aprobar', err.message || 'No se pudo aprobar la prenda', 'error')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleRejectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rejectingProduct) return
+    setProcessing(true)
+    try {
+      await productApi.reject(rejectingProduct.idProduct, rejectionReason)
+      showToast('Prenda rechazada', `Se notificó el motivo al vendedor`, 'info')
+      setRejectingProduct(null)
+      setRejectionReason('')
+      loadPending()
+      if (onUpdate) onUpdate()
+    } catch (err: any) {
+      showToast('Error', err.message || 'No se pudo registrar el rechazo', 'error')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <div className="admin-pending-container">
+      <div className="admin-inventory-card">
+        <div className="inventory-header">
+          <div>
+            <h3>Prendas Enviadas por Vendedores (Por Confirmar)</h3>
+            <p>Revisa la autenticidad, fotos y condición de las piezas. Solo se mostrarán en la tienda tras tu aprobación.</p>
+          </div>
+          <span className="inventory-count-tag alert">{pending.length} por revisar</span>
+        </div>
+
+        {loading ? (
+          <div className="admin-loading-state">Cargando prendas en revisión...</div>
+        ) : pending.length === 0 ? (
+          <div className="empty-pending-state">
+            <span className="empty-pending-icon">✨</span>
+            <h4>No hay prendas pendientes de revisión</h4>
+            <p>Todos los envíos de los vendedores han sido evaluados y atendidos. ¡Todo al día!</p>
+          </div>
+        ) : (
+          <div className="pending-products-grid">
+            {pending.map(prod => (
+              <div key={prod.idProduct} className="pending-product-card">
+                <div className="pending-card-media">
+                  <img
+                    src={prod.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=400&q=80'}
+                    alt={prod.name}
+                    className="pending-img"
+                    onError={e => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=400&q=80'
+                    }}
+                  />
+                  <span className="pending-status-ribbon">⏳ Por Revisar</span>
+                </div>
+
+                <div className="pending-card-body">
+                  <div className="pending-seller-info">
+                    <span className="seller-label">Vendedor:</span>
+                    <strong>{prod.sellerName || prod.sellerEmail || 'Vendedor La Cachina'}</strong>
+                    <span className="seller-email">({prod.sellerEmail})</span>
+                  </div>
+
+                  <h4 className="pending-title">{prod.name}</h4>
+
+                  <div className="pending-meta-tags">
+                    <span className="meta-pill">{prod.categoryName}</span>
+                    <span className="meta-pill">Talla: {prod.size}</span>
+                    <span className="meta-pill condition">Condición: {prod.condition}/5</span>
+                  </div>
+
+                  <div className="pending-price-tag">
+                    <span>Precio sugerido:</span>
+                    <strong>S/ {prod.price.toFixed(2)}</strong>
+                  </div>
+
+                  <div className="pending-actions-row">
+                    <button
+                      type="button"
+                      className="btn-approve-product"
+                      onClick={() => handleApprove(prod)}
+                      disabled={processing}
+                    >
+                      <span>✓ Aprobar y Publicar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-reject-product"
+                      onClick={() => setRejectingProduct(prod)}
+                      disabled={processing}
+                    >
+                      <span>✕ Rechazar</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reject Reason Modal */}
+      {rejectingProduct && (
+        <div className="admin-modal-backdrop" onClick={() => setRejectingProduct(null)}>
+          <div className="admin-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Rechazar Prenda: {rejectingProduct.name}</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setRejectingProduct(null)}>✕</button>
+            </div>
+
+            <form onSubmit={handleRejectSubmit} className="reject-reason-form">
+              <p>Indica el motivo por el cual no se aprueba la prenda para que el vendedor pueda corregirlo o retirarla:</p>
+
+              <div className="form-group-modern">
+                <label>Motivo del Rechazo *</label>
+                <textarea
+                  rows={4}
+                  placeholder="Ej. Fotos poco nítidas, precio fuera de rango de mercado vintage, o requiere verificar autenticidad de etiqueta..."
+                  value={rejectionReason}
+                  onChange={e => setRejectionReason(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="modal-actions-row">
+                <button type="submit" className="btn-reject-confirm" disabled={processing}>
+                  {processing ? 'Guardando...' : 'Confirmar Rechazo'}
+                </button>
+                <button type="button" className="btn-outline-luxury" onClick={() => setRejectingProduct(null)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AdminUsers() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
+  const { updateUserRole } = useAuth()
+  const { showToast } = useToast()
 
-  useEffect(() => {
+  const loadUsers = () => {
     userApi.getAllUsers()
       .then(res => setUsers(res))
       .catch(err => console.error(err))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadUsers()
   }, [])
+
+  const handleRoleChange = async (username: string, newRole: string) => {
+    try {
+      await updateUserRole(username, newRole)
+      showToast('Rol actualizado', `El usuario @${username} ahora es ${newRole}`, 'success')
+      loadUsers()
+    } catch (err: any) {
+      showToast('Error al actualizar rol', err.message || 'No se pudo modificar el rol', 'error')
+    }
+  }
 
   return (
     <div className="admin-users-container">
       <div className="admin-inventory-card">
         <div className="inventory-header">
           <div>
-            <h3>Usuarios Registrados en La Cachina Online</h3>
-            <p>Control de perfiles, administradores (`ADMIN`), vendedores vintage (`SELLER`) y clientes (`CUSTOMER`).</p>
+            <h3>Usuarios Registrados & Control de Roles</h3>
+            <p>Asigna y gestiona los 3 roles del sistema: Comprador (`CUSTOMER` / `USER`), Vendedor Vintage (`SELLER`) y Administrador (`ADMIN`).</p>
           </div>
           <span className="inventory-count-tag">{users.length} usuarios</span>
         </div>
@@ -961,7 +1042,8 @@ function AdminUsers() {
                   <th>Usuario</th>
                   <th>Nombre Mostrado</th>
                   <th>Correo Electrónico</th>
-                  <th>Rol Asignado</th>
+                  <th>Rol Actual</th>
+                  <th>Modificar Rol</th>
                   <th>Estado</th>
                 </tr>
               </thead>
@@ -977,6 +1059,18 @@ function AdminUsers() {
                       </span>
                     </td>
                     <td>
+                      <select
+                        value={u.role}
+                        className="role-change-select"
+                        onChange={e => handleRoleChange(u.username, e.target.value)}
+                      >
+                        <option value="USER">Comprador (USER)</option>
+                        <option value="CUSTOMER">Cliente (CUSTOMER)</option>
+                        <option value="SELLER">Vendedor (SELLER)</option>
+                        <option value="ADMIN">Administrador (ADMIN)</option>
+                      </select>
+                    </td>
+                    <td>
                       <span className="user-active-badge">✓ Activo</span>
                     </td>
                   </tr>
@@ -989,4 +1083,311 @@ function AdminUsers() {
     </div>
   )
 }
+
+function AdminSellerApplications({ onUpdate }: { onUpdate: () => void }) {
+  const { showToast } = useToast()
+  const [applications, setApplications] = useState<SellerApplication[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
+  const [processingId, setProcessingId] = useState<number | null>(null)
+  const [rejectModalApp, setRejectModalApp] = useState<SellerApplication | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+
+  const loadApplications = () => {
+    setLoading(true)
+    sellerApplicationApi.getAll()
+      .then(setApplications)
+      .catch(() => setApplications([]))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadApplications()
+  }, [])
+
+  const handleApprove = async (app: SellerApplication) => {
+    setProcessingId(app.idApplication)
+    try {
+      await sellerApplicationApi.approve(app.idApplication)
+      showToast('¡Vendedor Aprobado!', `El usuario ${app.userEmail} ahora tiene permisos oficiales de VENDEDOR (SELLER).`, 'success')
+      loadApplications()
+      onUpdate()
+    } catch (err: any) {
+      showToast('Error al aprobar', err.message || 'No se pudo aprobar la solicitud', 'error')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleRejectConfirm = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rejectModalApp) return
+
+    setProcessingId(rejectModalApp.idApplication)
+    try {
+      await sellerApplicationApi.reject(rejectModalApp.idApplication, rejectionReason)
+      showToast('Solicitud rechazada', `Se notificó el rechazo a ${rejectModalApp.userEmail}.`, 'info')
+      setRejectModalApp(null)
+      setRejectionReason('')
+      loadApplications()
+      onUpdate()
+    } catch (err: any) {
+      showToast('Error', err.message || 'No se pudo rechazar la solicitud', 'error')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const filteredApps = applications.filter(a => {
+    if (filterStatus === 'ALL') return true
+    return a.status === filterStatus
+  })
+
+  const pendingCount = applications.filter(a => a.status === 'PENDING').length
+
+  return (
+    <div className="admin-seller-apps-container">
+      <div className="admin-inventory-card">
+        <div className="inventory-header">
+          <div>
+            <h3>Solicitudes de Admisión para Vendedores Vintage</h3>
+            <p>Revisa las postulaciones de compradores que desean convertirse en Vendedores Oficiales de La Cachina.</p>
+          </div>
+
+          <div className="inventory-actions">
+            <div className="filter-pill-group">
+              <button
+                type="button"
+                className={`filter-pill-btn ${filterStatus === 'ALL' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('ALL')}
+              >
+                Todas ({applications.length})
+              </button>
+              <button
+                type="button"
+                className={`filter-pill-btn ${filterStatus === 'PENDING' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('PENDING')}
+              >
+                ⏳ Pendientes ({pendingCount})
+              </button>
+              <button
+                type="button"
+                className={`filter-pill-btn ${filterStatus === 'APPROVED' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('APPROVED')}
+              >
+                ✓ Aprobadas ({applications.filter(a => a.status === 'APPROVED').length})
+              </button>
+              <button
+                type="button"
+                className={`filter-pill-btn ${filterStatus === 'REJECTED' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('REJECTED')}
+              >
+                ✕ Rechazadas ({applications.filter(a => a.status === 'REJECTED').length})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="admin-loading-state">Cargando solicitudes de vendedor...</div>
+        ) : filteredApps.length === 0 ? (
+          <div className="admin-empty-state">
+            <span className="empty-icon">👔</span>
+            <p>No hay solicitudes en esta sección.</p>
+          </div>
+        ) : (
+          <div className="seller-apps-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Tienda / Marca</th>
+                  <th>Solicitante & Correo</th>
+                  <th>Doc. Identidad</th>
+                  <th>Contacto & Redes</th>
+                  <th>Catálogo & Experiencia</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                  <th>Acción Administrador</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredApps.map(app => (
+                  <tr key={app.idApplication}>
+                    <td>
+                      <strong style={{ color: 'var(--brand-volt)', fontSize: '0.95rem' }}>{app.shopName}</strong>
+                    </td>
+                    <td>
+                      <div><strong>{app.userName || 'Usuario'}</strong></div>
+                      <small style={{ color: 'var(--text-muted)' }}>{app.userEmail}</small>
+                    </td>
+                    <td>
+                      <span>{app.docNumber || '—'}</span>
+                    </td>
+                    <td>
+                      {app.phone && <div>📞 {app.phone}</div>}
+                      {app.instagram && (
+                        <div style={{ color: 'var(--brand-volt)', fontWeight: 600 }}>
+                          📸 {app.instagram}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ maxWidth: '280px' }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                        {app.experienceDetails || 'Sin detalles adicionales'}
+                      </p>
+                      {app.rejectionReason && (
+                        <div style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: '#ef4444' }}>
+                          <strong>Motivo de rechazo:</strong> {app.rejectionReason}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        {new Date(app.createdAt).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`user-role-badge role-${app.status.toLowerCase()}`} style={{
+                        background: app.status === 'APPROVED' ? 'rgba(210, 248, 11, 0.15)' : app.status === 'PENDING' ? 'rgba(250, 204, 21, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: app.status === 'APPROVED' ? 'var(--brand-volt)' : app.status === 'PENDING' ? '#facc15' : '#ef4444',
+                        borderColor: app.status === 'APPROVED' ? 'var(--brand-volt)' : app.status === 'PENDING' ? '#facc15' : '#ef4444',
+                      }}>
+                        {app.status === 'APPROVED' ? '✓ APROBADO' : app.status === 'PENDING' ? '⏳ PENDIENTE' : '✕ RECHAZADO'}
+                      </span>
+                    </td>
+                    <td>
+                      {app.status === 'PENDING' ? (
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            className="btn-action-approve"
+                            disabled={processingId === app.idApplication}
+                            onClick={() => handleApprove(app)}
+                            title="Aprobar y otorgar rol VENDEDOR"
+                            style={{
+                              background: 'var(--brand-volt)',
+                              color: '#0D0D10',
+                              border: 'none',
+                              padding: '0.4rem 0.75rem',
+                              borderRadius: 'var(--radius-xs)',
+                              fontWeight: 800,
+                              fontSize: '0.78rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {processingId === app.idApplication ? '...' : '✓ Aprobar'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action-reject"
+                            disabled={processingId === app.idApplication}
+                            onClick={() => {
+                              setRejectModalApp(app)
+                              setRejectionReason('')
+                            }}
+                            title="Rechazar solicitud"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#ef4444',
+                              border: '1px solid #ef4444',
+                              padding: '0.4rem 0.65rem',
+                              borderRadius: 'var(--radius-xs)',
+                              fontWeight: 700,
+                              fontSize: '0.78rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ✕ Rechazar
+                          </button>
+                        </div>
+                      ) : app.status === 'REJECTED' ? (
+                        <button
+                          type="button"
+                          disabled={processingId === app.idApplication}
+                          onClick={() => handleApprove(app)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid var(--border-medium)',
+                            color: 'var(--text-secondary)',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: 'var(--radius-xs)',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Reconsiderar & Aprobar
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--brand-volt)', fontWeight: 700 }}>
+                          ✓ Vendedor Activo
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Reject Modal */}
+      {rejectModalApp && (
+        <div className="admin-modal-overlay" onClick={() => setRejectModalApp(null)}>
+          <div className="admin-modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="admin-modal-header">
+              <h3>Rechazar Solicitud de Vendedor</h3>
+              <button type="button" onClick={() => setRejectModalApp(null)}>✕</button>
+            </div>
+            <form onSubmit={handleRejectConfirm} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                Indica el motivo por el cual la postulación de <strong>{rejectModalApp.shopName}</strong> ({rejectModalApp.userEmail}) no fue aceptada:
+              </p>
+              <textarea
+                rows={3}
+                required
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                placeholder="Ej. El catálogo presentado no cumple con los criterios de autenticidad o condición vintage requeridos."
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'var(--surface-sunken)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#fff',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-cancel-modal"
+                  onClick={() => setRejectModalApp(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processingId === rejectModalApp.idApplication}
+                  style={{
+                    background: '#ef4444',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.6rem 1.25rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Confirmar Rechazo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 

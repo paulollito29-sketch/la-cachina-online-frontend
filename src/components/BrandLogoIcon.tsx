@@ -1,0 +1,34 @@
+export default function BrandLogoIcon({ size = 42, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 512 512"
+      width={size}
+      height={size}
+      className={className}
+      style={{ display: 'block', borderRadius: 'inherit' }}
+    >
+      <defs>
+        <linearGradient id="neonVoltBrand" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#E8FF3B" />
+          <stop offset="100%" stopColor="#C0E800" />
+        </linearGradient>
+      </defs>
+
+      {/* Deep Obsidian Dark Circular / Rounded Background */}
+      <rect width="512" height="512" rx="120" fill="#0D0D10" />
+
+      {/* Circular Arrow & LC Monogram Group in Neon Volt */}
+      <g fill="url(#neonVoltBrand)">
+        {/* Circular Arrow Arc (Thrift / Circular Fashion Symbol) */}
+        <path d="M 256 56 C 366.5 56 456 145.5 456 256 C 456 366.5 366.5 456 256 456 C 160.8 456 81.3 389.2 61.2 299.5 L 105.8 289.7 C 121.5 359.8 182.8 412 256 412 C 342.2 412 412 342.2 412 256 C 412 169.8 342.2 100 256 100 C 205.7 100 161.4 123.8 133.2 160.8 L 180 160.8 L 180 204.8 L 56 204.8 L 56 80.8 L 100 80.8 L 100 126.8 C 137.6 83.2 193.6 56 256 56 Z" />
+
+        {/* Bold Sharp Italic 'L' */}
+        <polygon points="172,175 238,175 204,310 286,310 274,352 128,352 144,288 172,175" />
+
+        {/* Bold Sharp Italic 'C' */}
+        <path d="M 370 175 L 290 175 C 242 175 212 212 200 260 C 188 308 214 352 265 352 L 356 352 L 368 306 L 272 306 C 248 306 238 286 244 262 C 250 238 268 221 292 221 L 358 221 Z" />
+      </g>
+    </svg>
+  )
+}
