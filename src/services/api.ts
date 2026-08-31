@@ -588,7 +588,7 @@ export const sellerApplicationApi = {
   getAll: async (): Promise<SellerApplication[]> => {
     try {
       const remote = await request<SellerApplication[]>('/seller-applications')
-      if (remote && Array.isArray(remote) && remote.length > 0) {
+      if (remote && Array.isArray(remote)) {
         saveStoredSellerApplications(remote)
         return remote
       }
