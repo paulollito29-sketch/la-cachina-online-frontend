@@ -321,17 +321,21 @@ export default function Shop() {
                   type="button"
                   className={`grid-btn ${gridCols === '3' ? 'active' : ''}`}
                   onClick={() => setGridCols('3')}
-                  title="Vista 3 columnas"
+                  title="Vista 3 columnas (Prendas grandes)"
+                  aria-label="Vista 3 columnas"
                 >
-                  ■■■
+                  <span className="grid-icon-indicator">■■■</span>
+                  <span className="grid-col-num">3</span>
                 </button>
                 <button
                   type="button"
                   className={`grid-btn ${gridCols === '4' ? 'active' : ''}`}
                   onClick={() => setGridCols('4')}
-                  title="Vista 4 columnas"
+                  title="Vista 4 columnas (Vista compacta)"
+                  aria-label="Vista 4 columnas"
                 >
-                  ■■■■
+                  <span className="grid-icon-indicator">■■■■</span>
+                  <span className="grid-col-num">4</span>
                 </button>
               </div>
             </div>

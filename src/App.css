@@ -2039,21 +2039,49 @@
 
 .grid-toggle-desktop {
   display: flex;
-  gap: 0.25rem;
-}
-
-.grid-btn {
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-xs);
-  font-size: 0.75rem;
+  align-items: center;
+  gap: 0.35rem;
   background: var(--canvas-subtle);
-  color: var(--text-muted);
+  padding: 3px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
 }
 
+.grid-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.grid-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .grid-btn.active {
-  background: var(--surface-dark);
-  color: var(--gold);
+  background: #000000;
+  color: var(--brand-volt, #e8ff3b);
+  border-color: rgba(232, 255, 59, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.grid-icon-indicator {
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+}
+
+.grid-col-num {
+  font-size: 0.72rem;
+  opacity: 0.85;
 }
 
 /* Active Filters Strip */
@@ -2103,15 +2131,39 @@
 /* Products Grid Shop */
 .products-grid-shop {
   display: grid;
-  gap: 1.75rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .products-grid-shop.cols-3 {
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
 .products-grid-shop.cols-4 {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .products-grid-shop.cols-4 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .products-grid-shop.cols-3,
+  .products-grid-shop.cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .products-grid-shop.cols-3,
+  .products-grid-shop.cols-4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .empty-shop-state {
