@@ -11,7 +11,7 @@ type Tab = 'dashboard' | 'pending' | 'seller-applications' | 'products' | 'categ
 
 const emptyProduct: ProductCreate = {
   name: '', description: '', price: 0, size: 'M', condition: 4,
-  imageUrl: '', images: [], categoryId: 1, available: true, sex: 'U',
+  imageUrl: '', images: [], categoryId: '', available: true, sex: 'U',
 }
 
 interface DashboardStats {
@@ -170,7 +170,7 @@ function AdminProducts() {
   const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState<ProductCreate>(emptyProduct)
   const [imageList, setImageList] = useState<string[]>([])
-  const [editing, setEditing] = useState<number | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
   const { showToast } = useToast()
@@ -226,7 +226,7 @@ function AdminProducts() {
     }
   }
 
-  const startEdit = async (id: number) => {
+  const startEdit = async (id: string) => {
     try {
       const p = await productApi.getOne(id)
       const initialImgs = (p.images && p.images.length > 0)
@@ -246,7 +246,7 @@ function AdminProducts() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar esta prenda del archivo?')) return
     try {
       await productApi.delete(id)
@@ -466,7 +466,7 @@ function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([])
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
-  const [editing, setEditing] = useState<number | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
   const [error, setError] = useState('')
   const { showToast } = useToast()
 
@@ -499,7 +499,7 @@ function AdminCategories() {
     setDesc(cat.description)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar esta categoría?')) return
     try {
       await categoryApi.delete(id)
@@ -1089,7 +1089,7 @@ function AdminSellerApplications({ onUpdate }: { onUpdate: () => void }) {
   const [applications, setApplications] = useState<SellerApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
-  const [processingId, setProcessingId] = useState<number | null>(null)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const [rejectModalApp, setRejectModalApp] = useState<SellerApplication | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
 

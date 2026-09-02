@@ -4,8 +4,8 @@ import type { ProductSummary, CartItem } from '../types/models'
 interface CartContextType {
   items: CartItem[]
   addItem: (product: ProductSummary) => void
-  removeItem: (productId: number) => void
-  updateQuantity: (productId: number, quantity: number) => void
+  removeItem: (productId: string) => void
+  updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   itemCount: number
   totalCount: number
@@ -48,11 +48,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const removeItem = useCallback((productId: number) => {
+  const removeItem = useCallback((productId: string) => {
     setItems(prev => prev.filter(i => i.product.idProduct !== productId))
   }, [])
 
-  const updateQuantity = useCallback((productId: number, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeItem(productId)
       return

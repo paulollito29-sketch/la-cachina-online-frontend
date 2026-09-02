@@ -1,5 +1,5 @@
 export interface UserOrderItem {
-  idProduct: number
+  idProduct: string
   name: string
   price: number
   size?: string

@@ -39,7 +39,7 @@ export const categoryApi = {
       return getStoredCategories()
     }
   },
-  getOne: async (id: number): Promise<CategoryFull> => {
+  getOne: async (id: string): Promise<CategoryFull> => {
     try {
       return await request<CategoryFull>(`/categories/${id}`)
     } catch {
@@ -55,7 +55,7 @@ export const categoryApi = {
     } catch {
       const cats = getStoredCategories()
       const newCat: Category = {
-        idCategory: Date.now(),
+        idCategory: String(Date.now()),
         name: data.name,
         description: data.description || '',
         productCount: 0,
@@ -65,7 +65,7 @@ export const categoryApi = {
       return newCat
     }
   },
-  update: async (id: number, data: { name: string; description?: string }): Promise<Category> => {
+  update: async (id: string, data: { name: string; description?: string }): Promise<Category> => {
     try {
       return await request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     } catch {
@@ -75,7 +75,7 @@ export const categoryApi = {
       return updated.find(c => c.idCategory === id)!
     }
   },
-  delete: async (id: number): Promise<void> => {
+  delete: async (id: string): Promise<void> => {
     try {
       return await request<void>(`/categories/${id}`, { method: 'DELETE' })
     } catch {
@@ -86,7 +86,7 @@ export const categoryApi = {
 }
 
 export const productApi = {
-  getAll: async (categoryIds?: number[]): Promise<ProductSummary[]> => {
+  getAll: async (categoryIds?: string[]): Promise<ProductSummary[]> => {
     try {
       const params = categoryIds?.length ? `?category=${categoryIds.join('&category=')}` : ''
       return await request<ProductSummary[]>(`/products${params}`)
@@ -98,7 +98,7 @@ export const productApi = {
       return prods
     }
   },
-  getOne: async (id: number): Promise<ProductDetail> => {
+  getOne: async (id: string): Promise<ProductDetail> => {
     try {
       return await request<ProductDetail>(`/products/${id}`)
     } catch {
@@ -108,7 +108,7 @@ export const productApi = {
       return found
     }
   },
-  search: async (params: { q?: string; category?: number[]; minCondition?: number; maxCondition?: number; available?: boolean; sex?: string; size?: string }): Promise<ProductSummary[]> => {
+  search: async (params: { q?: string; category?: string[]; minCondition?: number; maxCondition?: number; available?: boolean; sex?: string; size?: string }): Promise<ProductSummary[]> => {
     try {
       const sp = new URLSearchParams()
       if (params.q) sp.set('q', params.q)
@@ -177,7 +177,7 @@ export const productApi = {
       const primaryImg = cleanImages[0] || data.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80'
 
       const newProduct: ProductDetail = {
-        idProduct: Date.now(),
+        idProduct: String(Date.now()),
         name: data.name,
         description: data.description || '',
         price: data.price,
@@ -196,7 +196,7 @@ export const productApi = {
       return newProduct
     }
   },
-  update: async (id: number, data: ProductCreate): Promise<ProductDetail> => {
+  update: async (id: string, data: ProductCreate): Promise<ProductDetail> => {
     try {
       return await request<ProductDetail>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     } catch {
@@ -224,7 +224,7 @@ export const productApi = {
       return updated.find(p => p.idProduct === id)!
     }
   },
-  delete: async (id: number): Promise<void> => {
+  delete: async (id: string): Promise<void> => {
     try {
       return await request<void>(`/products/${id}`, { method: 'DELETE' })
     } catch {
@@ -270,7 +270,7 @@ export const productApi = {
       const primaryImg = cleanImages[0] || data.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80'
 
       const newProduct: ProductDetail = {
-        idProduct: Date.now(),
+        idProduct: String(Date.now()),
         name: data.name,
         description: data.description || '',
         price: data.price,
@@ -291,7 +291,7 @@ export const productApi = {
       return newProduct
     }
   },
-  approve: async (id: number): Promise<ProductDetail> => {
+  approve: async (id: string): Promise<ProductDetail> => {
     try {
       return await request<ProductDetail>(`/products/${id}/approve`, { method: 'POST' })
     } catch {
@@ -301,7 +301,7 @@ export const productApi = {
       return updated.find(p => p.idProduct === id) as ProductDetail
     }
   },
-  reject: async (id: number, reason?: string): Promise<ProductDetail> => {
+  reject: async (id: string, reason?: string): Promise<ProductDetail> => {
     try {
       return await request<ProductDetail>(`/products/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) })
     } catch {
@@ -319,12 +319,12 @@ export const customerApi = {
       return await request<Customer[]>('/customers')
     } catch {
       return [
-        { idCustomer: 1, name: 'Camila Rossi', email: 'camila@example.com', phone: '+51 987654321', address: 'Av. Larco 450, Miraflores, Lima' },
-        { idCustomer: 2, name: 'Diego Benavides', email: 'diego@example.com', phone: '+51 912345678', address: 'Jr. Colina 210, Barranco, Lima' },
+        { idCustomer: '1', name: 'Camila Rossi', email: 'camila@example.com', phone: '+51 987654321', address: 'Av. Larco 450, Miraflores, Lima' },
+        { idCustomer: '2', name: 'Diego Benavides', email: 'diego@example.com', phone: '+51 912345678', address: 'Jr. Colina 210, Barranco, Lima' },
       ]
     }
   },
-  getOne: async (id: number): Promise<Customer> => {
+  getOne: async (id: string): Promise<Customer> => {
     try {
       return await request<Customer>(`/customers/${id}`)
     } catch {
@@ -336,7 +336,7 @@ export const customerApi = {
       return await request<Customer>('/customers', { method: 'POST', body: JSON.stringify(data) })
     } catch {
       return {
-        idCustomer: Date.now(),
+        idCustomer: String(Date.now()),
         name: data.name,
         email: data.email,
         phone: data.phone || '',
@@ -354,15 +354,15 @@ export const saleApi = {
       return []
     }
   },
-  getOne: async (id: number): Promise<Sale> => {
+  getOne: async (id: string): Promise<Sale> => {
     return await request<Sale>(`/sales/${id}`)
   },
-  create: async (data: { customerId: number; description: string }): Promise<Sale> => {
+  create: async (data: { customerId: string; description: string }): Promise<Sale> => {
     try {
       return await request<Sale>('/sales', { method: 'POST', body: JSON.stringify(data) })
     } catch {
       return {
-        idSale: Math.floor(1000 + Math.random() * 9000),
+        idSale: String(Date.now()),
         subTotal: 0,
         tax: 0,
         total: 0,
@@ -404,7 +404,7 @@ export const claimApi = {
       const code = `LR-${currentYear}-${String(existing.length + 1).padStart(4, '0')}`
       const newClaim: import('../types/models').ClaimResponse = {
         ...data,
-        idClaim: Date.now(),
+        idClaim: String(Date.now()),
         claimCode: code,
         createdAt: new Date().toISOString(),
         status: 'PENDIENTE',
@@ -431,7 +431,7 @@ export const claimApi = {
     }
   },
   updateStatus: async (
-    id: number,
+    id: string,
     data: { status: 'PENDIENTE' | 'EN_REVISION' | 'ATENDIDO'; adminResponse?: string }
   ): Promise<import('../types/models').ClaimResponse> => {
     try {
@@ -501,7 +501,7 @@ export const auctionApi = {
       return getStoredAuctions()
     }
   },
-  getOne: async (id: number): Promise<Auction> => {
+  getOne: async (id: string): Promise<Auction> => {
     try {
       return await request<Auction>(`/auctions/${id}`)
     } catch {
@@ -520,7 +520,7 @@ export const auctionApi = {
     } catch {
       const all = await auctionApi.getAll()
       const newAuction: Auction = {
-        idAuction: Date.now(),
+        idAuction: String(Date.now()),
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl || data.images?.[0] || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
@@ -545,7 +545,7 @@ export const auctionApi = {
       return newAuction
     }
   },
-  placeBid: async (id: number, bidData: BidCreate): Promise<Auction> => {
+  placeBid: async (id: string, bidData: BidCreate): Promise<Auction> => {
     try {
       return await request<Auction>(`/auctions/${id}/bid`, {
         method: 'POST',
@@ -563,7 +563,7 @@ export const auctionApi = {
       }
 
       const newBid: AuctionBid = {
-        idBid: Date.now(),
+        idBid: String(Date.now()),
         idAuction: id,
         bidderEmail: bidData.bidderEmail,
         bidderName: bidData.bidderName,
@@ -614,7 +614,7 @@ export const sellerApplicationApi = {
     } catch {
       const all = getStoredSellerApplications()
       const newApp: SellerApplication = {
-        idApplication: Date.now(),
+        idApplication: String(Date.now()),
         userEmail: data.userEmail,
         userName: data.userName,
         shopName: data.shopName,
@@ -630,7 +630,7 @@ export const sellerApplicationApi = {
       return newApp
     }
   },
-  approve: async (id: number): Promise<SellerApplication> => {
+  approve: async (id: string): Promise<SellerApplication> => {
     try {
       return await request<SellerApplication>(`/seller-applications/${id}/approve`, {
         method: 'POST',
@@ -656,7 +656,7 @@ export const sellerApplicationApi = {
       return app
     }
   },
-  reject: async (id: number, reason?: string): Promise<SellerApplication> => {
+  reject: async (id: string, reason?: string): Promise<SellerApplication> => {
     try {
       return await request<SellerApplication>(`/seller-applications/${id}/reject`, {
         method: 'POST',

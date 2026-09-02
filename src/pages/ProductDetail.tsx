@@ -38,7 +38,7 @@ export default function ProductDetailPage() {
     if (!id) return
     setLoading(true)
     setActiveImageIndex(0)
-    productApi.getOne(Number(id))
+    productApi.getOne(id)
       .then(prod => {
         setProduct(prod)
         productApi.getAll([prod.categoryId]).then(allInCat => {

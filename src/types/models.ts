@@ -1,5 +1,5 @@
 export interface Category {
-  idCategory: number
+  idCategory: string
   name: string
   description: string
   productCount: number
@@ -10,7 +10,7 @@ export interface CategoryFull extends Category {
 }
 
 export interface ProductSummary {
-  idProduct: number
+  idProduct: string
   name: string
   price: number
   size: string
@@ -18,7 +18,7 @@ export interface ProductSummary {
   imageUrl: string
   images?: string[]
   categories?: string[]
-  categoryId: number
+  categoryId: string
   categoryName: string
   available: boolean
   sex: string
@@ -29,7 +29,7 @@ export interface ProductSummary {
 }
 
 export interface ProductDetail {
-  idProduct: number
+  idProduct: string
   name: string
   description: string
   price: number
@@ -38,7 +38,7 @@ export interface ProductDetail {
   imageUrl: string
   images?: string[]
   categories?: string[]
-  categoryId: number
+  categoryId: string
   categoryName: string
   available: boolean
   sex: string
@@ -57,7 +57,7 @@ export interface ProductCreate {
   imageUrl?: string
   images?: string[]
   categories?: string[]
-  categoryId: number
+  categoryId: string
   available: boolean
   sex?: string
   status?: string
@@ -70,7 +70,7 @@ export interface ProductUpdate extends ProductCreate {
 }
 
 export interface Customer {
-  idCustomer: number
+  idCustomer: string
   name: string
   email: string
   phone: string
@@ -78,24 +78,24 @@ export interface Customer {
 }
 
 export interface Sale {
-  idSale: number
+  idSale: string
   subTotal: number
   tax: number
   total: number
   description: string
-  customerId: number
+  customerId: string
   customerName: string
   saleDate: string
 }
 
 export interface SaleDetail {
-  idSaleDetail: number
+  idSaleDetail: string
   quantity: number
   unitPrice: number
   total: number
-  productId: number
+  productId: string
   productName: string
-  saleId: number
+  saleId: string
 }
 
 export interface CartItem {
@@ -126,7 +126,7 @@ export interface ClaimCreate {
 }
 
 export interface ClaimResponse {
-  idClaim: number
+  idClaim: string
   claimCode: string
   createdAt: string
   docType: string
@@ -162,8 +162,8 @@ export interface AppUser {
 }
 
 export interface AuctionBid {
-  idBid: number
-  idAuction: number
+  idBid: string
+  idAuction: string
   bidderEmail: string
   bidderName: string
   amount: number
@@ -171,7 +171,7 @@ export interface AuctionBid {
 }
 
 export interface Auction {
-  idAuction: number
+  idAuction: string
   title: string
   description?: string
   imageUrl: string
@@ -217,7 +217,7 @@ export interface BidCreate {
 }
 
 export interface SellerApplication {
-  idApplication: number
+  idApplication: string
   userEmail: string
   userName?: string
   shopName: string

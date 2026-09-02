@@ -45,11 +45,11 @@ export default function Landing() {
 
   const displayedDrops = activeDropCategory
     ? featuredProducts.filter(p => {
-        if (activeDropCategory === 1) return p.categoryId === 1 || p.categoryName.toLowerCase().includes('chaqueta') || p.categoryName.toLowerCase().includes('casaca') || p.categories?.some(c => c.toLowerCase().includes('chaqueta'))
-        if (activeDropCategory === 2) return p.categoryId === 2 || p.categoryName.toLowerCase().includes('jean') || p.categories?.some(c => c.toLowerCase().includes('jean'))
-        if (activeDropCategory === 3) return p.categoryId === 3 || p.categoryName.toLowerCase().includes('polo') || p.categories?.some(c => c.toLowerCase().includes('polo'))
-        if (activeDropCategory === 4) return p.categoryId === 4 || p.categoryName.toLowerCase().includes('camisa') || p.categories?.some(c => c.toLowerCase().includes('camisa'))
-        return p.categoryId === activeDropCategory
+        if (activeDropCategory === 1) return p.categoryName.toLowerCase().includes('chaqueta') || p.categoryName.toLowerCase().includes('casaca') || p.categories?.some(c => c.toLowerCase().includes('chaqueta'))
+        if (activeDropCategory === 2) return p.categoryName.toLowerCase().includes('jean') || p.categories?.some(c => c.toLowerCase().includes('jean'))
+        if (activeDropCategory === 3) return p.categoryName.toLowerCase().includes('polo') || p.categories?.some(c => c.toLowerCase().includes('polo'))
+        if (activeDropCategory === 4) return p.categoryName.toLowerCase().includes('camisa') || p.categories?.some(c => c.toLowerCase().includes('camisa'))
+        return true
       })
     : featuredProducts.slice(0, 8)
 

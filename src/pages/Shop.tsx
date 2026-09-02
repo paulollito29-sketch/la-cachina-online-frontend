@@ -14,9 +14,9 @@ export default function Shop() {
 
   // Filters state from URL or defaults
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [selectedCats, setSelectedCats] = useState<number[]>(() => {
+  const [selectedCats, setSelectedCats] = useState<string[]>(() => {
     const cat = searchParams.get('category')
-    return cat ? [Number(cat)] : []
+    return cat ? [cat] : []
   })
   const [minCondition, setMinCondition] = useState(0)
   const [maxCondition, setMaxCondition] = useState(5)
@@ -39,12 +39,12 @@ export default function Shop() {
 
     const catParam = searchParams.get('category')
     if (catParam) {
-      const catId = Number(catParam)
-      if (!isNaN(catId)) {
-        setSelectedCats([catId])
-      } else if (categories.length > 0) {
-        const found = categories.find(c => c.name.toLowerCase().includes(catParam.toLowerCase()))
+      if (categories.length > 0) {
+        const found = categories.find(c => c.idCategory === catParam || c.name.toLowerCase().includes(catParam.toLowerCase()))
         if (found) setSelectedCats([found.idCategory])
+        else setSelectedCats([catParam])
+      } else {
+        setSelectedCats([catParam])
       }
     }
   }, [searchParams, categories])
@@ -61,14 +61,18 @@ export default function Shop() {
       if (available !== null) params.available = available
       if (size) params.size = size
 
-      const hasFilters = Object.keys(params).length > 0
-      let result: ProductSummary[] = []
-      if (!hasFilters) {
-        result = await productApi.getAll()
-      } else {
-        result = await productApi.search(params as Parameters<typeof productApi.search>[0])
-      }
-      setProducts(result)
+      const data = await productApi.search(params as {
+        q?: string
+        category?: string[]
+        minCondition?: number
+        maxCondition?: number
+        available?: boolean
+        sex?: string
+        size?: string
+      })
+      setProducts(data)
+    } catch {
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -78,7 +82,7 @@ export default function Shop() {
     doSearch()
   }, [doSearch])
 
-  const toggleCat = (id: number) => {
+  const toggleCat = (id: string) => {
     setSelectedCats(prev =>
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     )
@@ -111,7 +115,7 @@ export default function Shop() {
         return list.sort((a, b) => b.condition - a.condition)
       case 'newest':
       default:
-        return list.sort((a, b) => b.idProduct - a.idProduct)
+        return list.sort((a, b) => b.idProduct.localeCompare(a.idProduct))
     }
   }, [products, sortBy])
 

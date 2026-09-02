@@ -35,7 +35,7 @@ export default function Profile() {
   const [sellerCategories, setSellerCategories] = useState<string[]>(['Chaquetas'])
   const [sellerForm, setSellerForm] = useState({
     name: '',
-    categoryId: 0,
+    categoryId: '',
     price: '',
     size: 'M',
     condition: 4,
@@ -86,7 +86,7 @@ export default function Profile() {
     // Fetch categories for seller dropdown
     categoryApi.getAll().then(cats => {
       setCategories(cats)
-      if (cats.length > 0 && sellerForm.categoryId === 0) {
+      if (cats.length > 0 && !sellerForm.categoryId) {
         setSellerForm(prev => ({ ...prev, categoryId: cats[0].idCategory }))
       }
     })
@@ -157,7 +157,7 @@ export default function Profile() {
 
     setSubmittingProduct(true)
     try {
-      const selectedCatObj = categories.find(c => c.idCategory === Number(sellerForm.categoryId))
+      const selectedCatObj = categories.find(c => c.idCategory === sellerForm.categoryId)
       const finalCats = sellerCategories.length > 0
         ? sellerCategories
         : [selectedCatObj?.name || 'Chaquetas']
@@ -165,7 +165,7 @@ export default function Profile() {
       await productApi.submitBySeller(
         {
           name: sellerForm.name.trim(),
-          categoryId: Number(sellerForm.categoryId) || (categories[0]?.idCategory ?? 1),
+          categoryId: sellerForm.categoryId || (categories[0]?.idCategory ?? ''),
           price: priceNum,
           size: sellerForm.size,
           condition: Number(sellerForm.condition),
@@ -189,7 +189,7 @@ export default function Profile() {
       // Reset form
       setSellerForm({
         name: '',
-        categoryId: categories[0]?.idCategory ?? 1,
+        categoryId: categories[0]?.idCategory ?? '',
         price: '',
         size: 'M',
         condition: 4,
