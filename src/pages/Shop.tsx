@@ -122,31 +122,7 @@ export default function Shop() {
   return (
     <div className="shop-page-wrapper">
       <div className="shop-main-container">
-        {/* ─── Mobile Filter Trigger Button ─── */}
-        <div className="shop-mobile-bar mobile-only">
-          <button
-            type="button"
-            className="btn-open-filters"
-            onClick={() => setMobileFilterOpen(true)}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="4" y1="21" x2="4" y2="14" />
-              <line x1="4" y1="10" x2="4" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12" y2="3" />
-              <line x1="20" y1="21" x2="20" y2="16" />
-              <line x1="20" y1="12" x2="20" y2="3" />
-              <line x1="1" y1="14" x2="7" y2="14" />
-              <line x1="9" y1="8" x2="15" y2="8" />
-              <line x1="17" y1="16" x2="23" y2="16" />
-            </svg>
-            <span>Filtros {hasFilters ? `(Activos)` : ''}</span>
-          </button>
-
-          <span className="mobile-product-count">{products.length} prendas</span>
-        </div>
-
-        {/* ─── Sidebar Filters ─── */}
+        {/* ─── Sidebar Filters (Desktop Sticky / Mobile Drawer) ─── */}
         <aside className={`shop-sidebar-modern ${mobileFilterOpen ? 'mobile-drawer-open' : ''}`}>
           <div className="sidebar-header">
             <h3>Filtrar Catálogo</h3>
@@ -290,6 +266,30 @@ export default function Shop() {
 
         {/* ─── Product Listing Area ─── */}
         <main className="shop-catalog-area">
+          {/* Mobile Filter Bar & Counter (Mobile Only) */}
+          <div className="shop-mobile-bar mobile-only">
+            <button
+              type="button"
+              className="btn-filter-mobile btn-open-filters"
+              onClick={() => setMobileFilterOpen(true)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="21" x2="4" y2="14" />
+                <line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" />
+                <line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" />
+                <line x1="9" y1="8" x2="15" y2="8" />
+                <line x1="17" y1="16" x2="23" y2="16" />
+              </svg>
+              <span>Filtros {hasFilters ? `(Activos)` : ''}</span>
+            </button>
+
+            <span className="mobile-product-count">{products.length} prendas</span>
+          </div>
+
           {/* Top Bar with Sort & Active Filters */}
           <div className="catalog-toolbar">
             <div className="toolbar-left">

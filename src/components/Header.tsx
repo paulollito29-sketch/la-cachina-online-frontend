@@ -128,7 +128,7 @@ export default function Header() {
                       Hola, <strong>{user.name.split(' ')[0]}</strong>
                     </span>
                   </Link>
-                  <button type="button" onClick={logout} className="action-btn-logout" title="Cerrar sesión">
+                  <button type="button" onClick={logout} className="action-btn-logout desktop-only" title="Cerrar sesión">
                     Salir
                   </button>
                 </div>
@@ -186,10 +186,11 @@ export default function Header() {
 
                 <div className="drawer-divider" />
                 <div className="drawer-section-label">CATEGORÍAS PRINCIPALES</div>
-                <Link to="/tienda?category=Chaquetas" onClick={() => setMobileMenuOpen(false)}>🧥 Chaquetas</Link>
-                <Link to="/tienda?category=Jeans" onClick={() => setMobileMenuOpen(false)}>👖 Jeans</Link>
                 <Link to="/tienda?category=Polos" onClick={() => setMobileMenuOpen(false)}>👕 Polos</Link>
-                <Link to="/tienda?category=Camisas" onClick={() => setMobileMenuOpen(false)}>👔 Camisas</Link>
+                <Link to="/tienda?category=Shorts" onClick={() => setMobileMenuOpen(false)}>🩳 Shorts</Link>
+                <Link to="/tienda?category=Jeans" onClick={() => setMobileMenuOpen(false)}>👖 Jeans</Link>
+                <Link to="/tienda?category=Pantalones" onClick={() => setMobileMenuOpen(false)}>👖 Pantalones</Link>
+                <Link to="/tienda?category=Buzos" onClick={() => setMobileMenuOpen(false)}>🏃 Buzos</Link>
 
                 <div className="drawer-divider" />
                 <div className="drawer-section-label">MI CUENTA & ACCIONES</div>
