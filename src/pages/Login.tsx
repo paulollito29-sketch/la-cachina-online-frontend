@@ -3,6 +3,7 @@ import { useAuth } from '../components/AuthContext'
 import { useToast } from '../components/ToastContext'
 import { useNavigate, Link } from 'react-router-dom'
 import GoogleSignInButton from '../components/GoogleSignInButton'
+import BrandLogoIcon from '../components/BrandLogoIcon'
 
 export default function Login() {
   const { loginWithPassword, user } = useAuth()
@@ -41,9 +42,11 @@ export default function Login() {
     <div className="page-center-modern">
       <div className="auth-card-modern">
         <div className="auth-card-header">
-          <div className="brand-monogram medium">
-            <span className="monogram-text">LC</span>
-          </div>
+          <Link to="/" title="La Cachina Online" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="brand-monogram medium" style={{ background: 'transparent', padding: 0 }}>
+              <BrandLogoIcon size={58} />
+            </div>
+          </Link>
           <span className="auth-eyebrow">✦ CLUB LA CACHINA ONLINE</span>
           <h2>Iniciar Sesión</h2>
           <p>Accede a tu cuenta para gestionar pedidos y drops exclusivos.</p>

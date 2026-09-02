@@ -58,8 +58,47 @@ export default function Cart() {
   const isProvincia = form.department.toLowerCase() !== 'lima'
   const baseShipping = isProvincia ? SHIPPING_PROVINCIA : SHIPPING_LIMA
   const shippingCost = total >= FREE_SHIPPING_THRESHOLD ? 0 : baseShipping
-  const finalTotal = total + shippingCost + PAYMENT_GATEWAY_FEE
+  const gatewayFee = form.paymentMethod === 'whatsapp' ? 0 : PAYMENT_GATEWAY_FEE
+  const finalTotal = total + shippingCost + gatewayFee
   const igvAmount = (finalTotal * 0.18) / 1.18 // 18% IGV included in price per Peruvian Law
+
+  const WHATSAPP_NUMBER = '51906920958'
+
+  const handleConsolidateWhatsApp = () => {
+    if (items.length === 0) {
+      showToast('Bolsa vacía', 'Agrega prendas a tu carrito para consolidar tu pedido.', 'error')
+      return
+    }
+
+    const itemsText = items
+      .map((it, idx) => {
+        const p = it.product
+        return `${idx + 1}. *${p.name}*\n   • Talla: ${p.size || 'Única'} | Cantidad: ${it.quantity}\n   • Precio unitario: S/ ${p.price.toFixed(2)}\n   • Subtotal: S/ ${(p.price * it.quantity).toFixed(2)}`
+      })
+      .join('\n\n')
+
+    const hasUserData = form.name.trim() || form.phone.trim() || form.address.trim()
+    const userDataBlock = hasUserData
+      ? `\n\n👤 *MIS DATOS DE ENTREGA:*\n• Nombre: ${form.name.trim() || 'Por confirmar'}\n• Teléfono: ${form.phone.trim() || 'Por confirmar'}\n• Destino: ${form.district ? form.district + ', ' : ''}${form.department || 'Lima'}\n• Dirección: ${form.address.trim() || 'Por confirmar'}`
+      : ''
+
+    const message = `¡Hola La Cachina Online! 👋
+Quiero consolidar mi pedido desde el carrito de la web:
+
+🛍️ *PRENDAS EN MI BOLSA (${items.length} ${items.length === 1 ? 'prenda' : 'prendas'}):*
+${itemsText}
+
+💰 *Subtotal Prendas:* S/ ${total.toFixed(2)} PEN
+📦 *Envío:* ${shippingCost === 0 ? '¡GRATIS!' : `S/ ${shippingCost.toFixed(2)} PEN`}
+✨ *Total Estimado:* S/ ${(total + shippingCost).toFixed(2)} PEN${userDataBlock}
+
+¿Tienen disponibilidad de estas piezas para coordinar el pago (Yape / Plin / Transferencia) y la entrega? ¡Muchas gracias! 🙌`
+
+    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
+
+    showToast('Abriendo WhatsApp...', 'Conectando con La Cachina Online para coordinar tu compra.', 'success')
+    window.open(waUrl, '_blank')
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -102,6 +141,11 @@ export default function Cart() {
   const handleProceedToPayment = (e: FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
+
+    if (form.paymentMethod === 'whatsapp') {
+      handleConsolidateWhatsApp()
+      return
+    }
 
     if (form.paymentMethod === 'culqi') {
       setCulqiModalOpen(true)
@@ -483,10 +527,11 @@ export default function Cart() {
               <div className="payment-selection-block">
                 <label className="payment-label-header">
                   <span>Pasarela de Pago Autorizada</span>
-                  <span className="pci-tag">🛡️ Culqi 3DS</span>
+                  <span className="pci-tag">🛡️ Culqi 3DS & WhatsApp Direct</span>
                 </label>
                 <div className="payment-methods-grid">
                   {[
+                    { id: 'whatsapp', name: 'Consolidar por WhatsApp (+51 906 920 958)', icon: '💬', highlightWa: true },
                     { id: 'culqi', name: 'Culqi (Tarjetas / Yape / CIP)', icon: '⚡', highlight: true },
                     { id: 'transfer', name: 'Transferencia BCP / BBVA', icon: '🏦' },
                     { id: 'cash', name: 'Contraentrega (Lima Centro)', icon: '💵' },
@@ -494,7 +539,7 @@ export default function Cart() {
                     <button
                       key={method.id}
                       type="button"
-                      className={`payment-method-card ${form.paymentMethod === method.id ? 'active' : ''} ${method.highlight ? 'highlight-culqi' : ''}`}
+                      className={`payment-method-card ${form.paymentMethod === method.id ? 'active' : ''} ${method.highlight ? 'highlight-culqi' : ''} ${method.highlightWa ? 'highlight-whatsapp' : ''}`}
                       onClick={() => handlePaymentSelect(method.id)}
                     >
                       <span className="method-icon">{method.icon}</span>
@@ -527,10 +572,12 @@ export default function Cart() {
                     {shippingCost === 0 ? 'GRATIS' : `S/ ${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
-                <div className="breakdown-row">
-                  <span>Fee de Pasarela de Pago</span>
-                  <span style={{ fontWeight: 700, color: 'var(--brand-volt)' }}>S/ {PAYMENT_GATEWAY_FEE.toFixed(2)}</span>
-                </div>
+                {gatewayFee > 0 && (
+                  <div className="breakdown-row">
+                    <span>Fee de Pasarela de Pago</span>
+                    <span style={{ fontWeight: 700, color: 'var(--brand-volt)' }}>S/ {gatewayFee.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="breakdown-row">
                   <span>IGV (18% incluido según ley)</span>
                   <span className="igv-tag">S/ {igvAmount.toFixed(2)}</span>
@@ -579,10 +626,26 @@ export default function Cart() {
                 <span>
                   {saving
                     ? 'Procesando...'
+                    : form.paymentMethod === 'whatsapp'
+                    ? `💬 Consolidar por WhatsApp (+51 906 920 958) →`
                     : form.paymentMethod === 'culqi'
                     ? `Pagar S/ ${finalTotal.toFixed(2)} con Culqi →`
                     : `Confirmar Pedido (S/ ${finalTotal.toFixed(2)}) →`}
                 </span>
+              </button>
+
+              <div className="whatsapp-checkout-divider">
+                <span>o coordina directamente sin pasar por pasarela</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConsolidateWhatsApp}
+                className="btn-whatsapp-direct full-width"
+              >
+                <span className="wa-icon">💬</span>
+                <span>Pedir y Consolidar por WhatsApp</span>
+                <span className="wa-number-pill">+51 906 920 958</span>
               </button>
 
               <div className="checkout-indecopi-seal">

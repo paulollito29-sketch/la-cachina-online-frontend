@@ -10,11 +10,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const timeoutId = setTimeout(() => controller.abort(), 4000)
 
   try {
+    const isJwt = typeof token === 'string' && token.split('.').length === 3
     const response = await fetch(`${API_BASE}/api${path}`, {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(isJwt ? { Authorization: `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
       ...init,

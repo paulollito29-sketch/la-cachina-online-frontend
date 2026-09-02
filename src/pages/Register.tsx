@@ -3,6 +3,7 @@ import { useAuth } from '../components/AuthContext'
 import { useToast } from '../components/ToastContext'
 import { useNavigate, Link } from 'react-router-dom'
 import GoogleSignInButton from '../components/GoogleSignInButton'
+import BrandLogoIcon from '../components/BrandLogoIcon'
 
 export default function Register() {
   const { register, user } = useAuth()
@@ -34,17 +35,17 @@ export default function Register() {
       return
     }
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+      setError('La contraseña debe tener al menos 6 caracteres.')
       return
     }
 
     setSaving(true)
     try {
       await register(username, email, password, displayName || undefined, 'CUSTOMER')
-      showToast('¡Cuenta creada con éxito!', 'Bienvenido a La Cachina Online', 'success')
+      showToast('¡Bienvenido!', `Tu cuenta @${username} ha sido creada exitosamente.`, 'success')
       navigate('/perfil')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear la cuenta. Intenta de nuevo.')
+    } catch (err: any) {
+      setError(err.message || 'Error al crear la cuenta. Inténtalo nuevamente.')
     } finally {
       setSaving(false)
     }
@@ -54,9 +55,11 @@ export default function Register() {
     <div className="page-center-modern">
       <div className="auth-card-modern">
         <div className="auth-card-header">
-          <div className="brand-monogram medium">
-            <span className="monogram-text">LC</span>
-          </div>
+          <Link to="/" title="La Cachina Online" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="brand-monogram medium" style={{ background: 'transparent', padding: 0 }}>
+              <BrandLogoIcon size={58} />
+            </div>
+          </Link>
           <span className="auth-eyebrow">✦ MEMBRESÍA LA CACHINA ONLINE</span>
           <h2>Crear Cuenta</h2>
           <p>Únete a nuestra comunidad de moda circular y accede a drops exclusivos.</p>

@@ -119,7 +119,7 @@ export default function Footer() {
             <div className="footer-social-links">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-pill">Instagram</a>
               <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="social-pill">TikTok</a>
-              <a href="https://wa.me/51999888777" target="_blank" rel="noopener noreferrer" className="social-pill">WhatsApp</a>
+              <a href="https://wa.me/51906920958" target="_blank" rel="noopener noreferrer" className="social-pill">WhatsApp</a>
             </div>
           </div>
         </div>

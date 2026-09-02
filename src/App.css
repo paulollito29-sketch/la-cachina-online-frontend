@@ -2909,6 +2909,77 @@
   color: var(--text-primary);
 }
 
+.payment-method-card.highlight-whatsapp {
+  border-color: rgba(37, 211, 102, 0.4);
+}
+
+.payment-method-card.highlight-whatsapp.active,
+.payment-method-card.highlight-whatsapp:hover {
+  border-color: #25D366;
+  background: rgba(37, 211, 102, 0.12);
+}
+
+/* WhatsApp Cart Direct Checkout */
+.btn-whatsapp-direct {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: #25D366;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md, 12px);
+  padding: 0.9rem 1.2rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+  margin-top: 0.5rem;
+}
+
+.btn-whatsapp-direct:hover {
+  background: #20ba59;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+}
+
+.btn-whatsapp-direct .wa-icon {
+  font-size: 1.3rem;
+}
+
+.btn-whatsapp-direct .wa-number-pill {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.whatsapp-checkout-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.25rem 0 0.5rem 0;
+}
+
+.whatsapp-checkout-divider::before,
+.whatsapp-checkout-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
+}
+
+.whatsapp-checkout-divider span {
+  padding: 0 0.75rem;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
 .checkout-summary-breakdown {
   border-top: 1px dashed var(--border-medium);
   padding-top: 1rem;

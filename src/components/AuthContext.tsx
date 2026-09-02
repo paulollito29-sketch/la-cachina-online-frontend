@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { AppUser } from '../types/models'
+import { API_BASE } from '../services/api'
 
 export interface User {
   id: number
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Try real backend API if available
     try {
-      const res = await fetch('/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: cleanId, password: cleanPass }),
@@ -173,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Try real backend API if available
     try {
-      const res = await fetch('/auth/register', {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -252,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       try {
-        const res = await fetch('/auth/google', {
+        const res = await fetch(`${API_BASE}/api/auth/google`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ credential }),
@@ -306,7 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Call real backend API to verify current password and update database hash
     try {
-      const res = await fetch('/auth/change-password', {
+      const res = await fetch(`${API_BASE}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -344,7 +345,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const forgotPassword = async (email: string) => {
     const cleanEmail = email.trim().toLowerCase()
     try {
-      const res = await fetch('/auth/forgot-password', {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail }),
@@ -364,7 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (token: string, newPassword: string) => {
     try {
-      const res = await fetch('/auth/reset-password', {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
@@ -385,7 +386,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendVerificationCode = async (email: string) => {
     const cleanEmail = email.trim().toLowerCase()
     try {
-      const res = await fetch('/auth/send-verification-code', {
+      const res = await fetch(`${API_BASE}/api/auth/send-verification-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail }),
@@ -415,7 +416,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanCode = code.trim()
 
     try {
-      const res = await fetch('/auth/reset-with-code', {
+      const res = await fetch(`${API_BASE}/api/auth/reset-with-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -448,7 +449,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('Debes iniciar sesión')
 
     try {
-      const res = await fetch('/auth/become-seller', {
+      const res = await fetch(`${API_BASE}/api/auth/become-seller`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -488,7 +489,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserRole = async (username: string, newRole: string) => {
     try {
-      await fetch('/auth/update-role', {
+      await fetch(`${API_BASE}/api/auth/update-role`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

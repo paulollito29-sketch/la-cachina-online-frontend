@@ -5,6 +5,10 @@
       "destination": "https://la-cachina-backend-410146064965.us-central1.run.app/api/:path*"
     },
     {
+      "source": "/auth/:path*",
+      "destination": "https://la-cachina-backend-410146064965.us-central1.run.app/api/auth/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
