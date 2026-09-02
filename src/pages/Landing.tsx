@@ -19,39 +19,40 @@ export default function Landing() {
   const categoriesPreview = [
     {
       id: 1,
-      title: 'Chaquetas',
-      tag: 'Chaquetas, Bombers & Cortavientos',
-      image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=80',
+      title: 'Polos',
+      tag: 'Adidas, Venum, Under Armour & Gráficos',
+      image: 'https://storage.googleapis.com/la-cachina-online-assets/catalog/Prenda_13_frente.jpg',
     },
     {
       id: 2,
-      title: 'Jeans',
-      tag: 'Denim Vintage, Levi\'s 501 & Baggy',
-      image: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=700&q=80',
+      title: 'Shorts',
+      tag: 'Ralph Lauren, Dockers, Boz & Deportivos',
+      image: 'https://storage.googleapis.com/la-cachina-online-assets/catalog/Prenda_16_frente.jpg',
     },
     {
       id: 3,
-      title: 'Polos',
-      tag: 'Polos Gráficos & Band Tees 90s',
-      image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80',
+      title: 'Jeans',
+      tag: 'Nudie Jeans, Billabong & Denim Vintage',
+      image: 'https://storage.googleapis.com/la-cachina-online-assets/catalog/Prenda_02_frente.jpg',
     },
     {
       id: 4,
-      title: 'Camisas',
-      tag: 'Camisas de Seda, Franela & Estampadas',
-      image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=700&q=80',
+      title: 'Pantalones',
+      tag: 'Dockers, Ritzy Jeans & Drill Clásico',
+      image: 'https://storage.googleapis.com/la-cachina-online-assets/catalog/Prenda_05_frente.jpg',
     },
   ]
 
   const displayedDrops = activeDropCategory
     ? featuredProducts.filter(p => {
-        if (activeDropCategory === 1) return p.categoryName.toLowerCase().includes('chaqueta') || p.categoryName.toLowerCase().includes('casaca') || p.categories?.some(c => c.toLowerCase().includes('chaqueta'))
-        if (activeDropCategory === 2) return p.categoryName.toLowerCase().includes('jean') || p.categories?.some(c => c.toLowerCase().includes('jean'))
-        if (activeDropCategory === 3) return p.categoryName.toLowerCase().includes('polo') || p.categories?.some(c => c.toLowerCase().includes('polo'))
-        if (activeDropCategory === 4) return p.categoryName.toLowerCase().includes('camisa') || p.categories?.some(c => c.toLowerCase().includes('camisa'))
+        if (activeDropCategory === 1) return p.categoryName.toLowerCase().includes('polo') || p.categories?.some(c => c.toLowerCase().includes('polo'))
+        if (activeDropCategory === 2) return p.categoryName.toLowerCase().includes('short') || p.categories?.some(c => c.toLowerCase().includes('short'))
+        if (activeDropCategory === 3) return p.categoryName.toLowerCase().includes('jean') || p.categories?.some(c => c.toLowerCase().includes('jean'))
+        if (activeDropCategory === 4) return p.categoryName.toLowerCase().includes('pantalon') || p.categories?.some(c => c.toLowerCase().includes('pantalon'))
+        if (activeDropCategory === 5) return p.categoryName.toLowerCase().includes('buzo') || p.categories?.some(c => c.toLowerCase().includes('buzo'))
         return true
       })
-    : featuredProducts.slice(0, 8)
+    : featuredProducts.slice(0, 12)
 
   return (
     <div className="landing-page-modern">
@@ -151,28 +152,35 @@ export default function Landing() {
               className={`drop-tab-btn ${activeDropCategory === 1 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(1)}
             >
-              Chaquetas
+              Polos
             </button>
             <button
               type="button"
               className={`drop-tab-btn ${activeDropCategory === 2 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(2)}
             >
-              Jeans
+              Shorts
             </button>
             <button
               type="button"
               className={`drop-tab-btn ${activeDropCategory === 3 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(3)}
             >
-              Polos
+              Jeans
             </button>
             <button
               type="button"
               className={`drop-tab-btn ${activeDropCategory === 4 ? 'active' : ''}`}
               onClick={() => setActiveDropCategory(4)}
             >
-              Camisas
+              Pantalones
+            </button>
+            <button
+              type="button"
+              className={`drop-tab-btn ${activeDropCategory === 5 ? 'active' : ''}`}
+              onClick={() => setActiveDropCategory(5)}
+            >
+              Buzos
             </button>
           </div>
         </div>
