@@ -12,6 +12,7 @@ export interface CategoryFull extends Category {
 export interface ProductSummary {
   idProduct: string
   name: string
+  description?: string
   price: number
   size: string
   condition: number

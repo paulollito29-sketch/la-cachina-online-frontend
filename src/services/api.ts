@@ -33,9 +33,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const categoryApi = {
+  getCached: (): Category[] => {
+    return getStoredCategories()
+  },
   getAll: async (): Promise<Category[]> => {
     try {
-      return await request<Category[]>('/categories')
+      const remote = await request<Category[]>('/categories')
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        saveStoredCategories(remote)
+      }
+      return remote
     } catch {
       return getStoredCategories()
     }
@@ -52,7 +59,10 @@ export const categoryApi = {
   },
   create: async (data: { name: string; description?: string }): Promise<Category> => {
     try {
-      return await request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) })
+      const created = await request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) })
+      const cats = getStoredCategories()
+      saveStoredCategories([...cats, created])
+      return created
     } catch {
       const cats = getStoredCategories()
       const newCat: Category = {
@@ -68,7 +78,10 @@ export const categoryApi = {
   },
   update: async (id: string, data: { name: string; description?: string }): Promise<Category> => {
     try {
-      return await request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+      const updatedRemote = await request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+      const cats = getStoredCategories()
+      saveStoredCategories(cats.map(c => c.idCategory === id ? updatedRemote : c))
+      return updatedRemote
     } catch {
       const cats = getStoredCategories()
       const updated = cats.map(c => c.idCategory === id ? { ...c, name: data.name, description: data.description || '' } : c)
@@ -78,7 +91,9 @@ export const categoryApi = {
   },
   delete: async (id: string): Promise<void> => {
     try {
-      return await request<void>(`/categories/${id}`, { method: 'DELETE' })
+      await request<void>(`/categories/${id}`, { method: 'DELETE' })
+      const cats = getStoredCategories().filter(c => c.idCategory !== id)
+      saveStoredCategories(cats)
     } catch {
       const cats = getStoredCategories().filter(c => c.idCategory !== id)
       saveStoredCategories(cats)
@@ -87,10 +102,17 @@ export const categoryApi = {
 }
 
 export const productApi = {
+  getCached: (): ProductSummary[] => {
+    return getStoredProducts()
+  },
   getAll: async (categoryIds?: string[]): Promise<ProductSummary[]> => {
     try {
       const params = categoryIds?.length ? `?category=${categoryIds.join('&category=')}` : ''
-      return await request<ProductSummary[]>(`/products${params}`)
+      const remote = await request<ProductSummary[]>(`/products${params}`)
+      if (remote && Array.isArray(remote) && remote.length > 0 && (!categoryIds || categoryIds.length === 0)) {
+        saveStoredProducts(remote)
+      }
+      return remote
     } catch {
       let prods = getStoredProducts()
       if (categoryIds && categoryIds.length > 0) {
@@ -106,7 +128,7 @@ export const productApi = {
       const prods = getStoredProducts()
       const found = prods.find(p => p.idProduct === id)
       if (!found) throw new Error('Producto no encontrado')
-      return found
+      return { description: found.description || '', ...found } as ProductDetail
     }
   },
   search: async (params: { q?: string; category?: string[]; minCondition?: number; maxCondition?: number; available?: boolean; sex?: string; size?: string }): Promise<ProductSummary[]> => {
@@ -131,7 +153,7 @@ export const productApi = {
       if (params.category && params.category.length > 0) {
         list = list.filter(p => {
           if (params.category!.includes(p.categoryId)) return true
-          if (p.categories && p.categories.some(c => {
+          if (p.categories && p.categories.some((c: string) => {
             const catObj = cats.find(x => x.name.toLowerCase() === c.toLowerCase())
             return catObj && params.category!.includes(catObj.idCategory)
           })) return true
@@ -222,7 +244,7 @@ export const productApi = {
         sex: data.sex || p.sex,
       } : p)
       saveStoredProducts(updated)
-      return updated.find(p => p.idProduct === id)!
+      return updated.find(p => p.idProduct === id)! as unknown as ProductDetail
     }
   },
   delete: async (id: string): Promise<void> => {

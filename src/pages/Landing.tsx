@@ -5,14 +5,16 @@ import ProductCard from '../components/ProductCard'
 import type { ProductSummary } from '../types/models'
 
 export default function Landing() {
-  const [featuredProducts, setFeaturedProducts] = useState<ProductSummary[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<ProductSummary[]>(() => productApi.getCached())
   const [activeDropCategory, setActiveDropCategory] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => productApi.getCached().length === 0)
 
   useEffect(() => {
     productApi.getAll()
-      .then(prods => setFeaturedProducts(prods))
-      .catch(() => setFeaturedProducts([]))
+      .then(prods => {
+        if (prods && prods.length > 0) setFeaturedProducts(prods)
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 

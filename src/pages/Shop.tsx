@@ -8,9 +8,9 @@ type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'condition-desc'
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState<ProductSummary[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const [products, setProducts] = useState<ProductSummary[]>(() => productApi.getCached())
+  const [categories, setCategories] = useState<Category[]>(() => categoryApi.getCached())
+  const [loading, setLoading] = useState(() => productApi.getCached().length === 0)
 
   // Filters state from URL or defaults
   const [search, setSearch] = useState(searchParams.get('q') || '')
@@ -27,9 +27,11 @@ export default function Shop() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [gridCols, setGridCols] = useState<'3' | '4'>('3')
 
-  // Load Categories
+  // Load Categories in background
   useEffect(() => {
-    categoryApi.getAll().then(setCategories)
+    categoryApi.getAll().then(cats => {
+      if (cats && cats.length > 0) setCategories(cats)
+    })
   }, [])
 
   // Sync URL params if user arrives via external link / search bar
@@ -50,7 +52,8 @@ export default function Shop() {
   }, [searchParams, categories])
 
   const doSearch = useCallback(async () => {
-    setLoading(true)
+    // Only show loading skeleton if we don't have any items yet
+    if (products.length === 0) setLoading(true)
     try {
       const params: Record<string, unknown> = {}
       if (search.trim()) params.q = search.trim()

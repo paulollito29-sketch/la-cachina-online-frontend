@@ -1,4 +1,4 @@
-import type { Category, ProductDetail } from '../types/models'
+import type { Category, ProductDetail, ProductSummary } from '../types/models'
 
 export const INITIAL_CATEGORIES: Category[] = []
 
@@ -21,7 +21,7 @@ export function saveStoredCategories(categories: Category[]) {
   } catch {}
 }
 
-export function getStoredProducts(): ProductDetail[] {
+export function getStoredProducts(): ProductSummary[] {
   try {
     const raw = localStorage.getItem(PRODUCTS_KEY)
     if (raw) return JSON.parse(raw)
@@ -29,7 +29,7 @@ export function getStoredProducts(): ProductDetail[] {
   return []
 }
 
-export function saveStoredProducts(products: ProductDetail[]) {
+export function saveStoredProducts(products: ProductSummary[]) {
   try {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products))
   } catch {}
